@@ -21,6 +21,12 @@ I think that this rule strongly contributes to the independence of components/la
 
 ---
 
+## Code Reviews
+
+I usually follow [the coding guideline](https://github.com/golang/go/wiki/CodeReviewComments) 
+
+1. use gofmt (go formatter package).
+
 ## Technical Knowledge
 
 ### Basics
@@ -98,7 +104,9 @@ its return named return values.
   }
 ```
 
-- var keyword: declares a list of variables
+##### var keyword: 
+
+it declares variables
 
 it can be at pacakge or function level
 
@@ -108,7 +116,7 @@ if use the declaration with initializer (with "="), you can omit type for the va
 var c = "hey"
 ```
 
-- short variable declarations (":=")
+##### short variable declarations (":=")
 
 this is only available inside function (not package level)
 
@@ -118,7 +126,7 @@ you can omit 'var' with implicit type.
 k := 3 // assign int 3 to k
 ```
 
-- patterns you find at code
+##### patterns you find at code
 
 ```
 1. var varName Type  // only declaration
@@ -126,59 +134,97 @@ k := 3 // assign int 3 to k
 3. varName := xxx // only inside function and can omit 'var' and 'explicit type'
 ```
 
-- 'const': constant value
+##### 'const': constant value
+
 it can be character, string boolean, or numeric
 it __cannot__ use short variable declarations (:=)
 
-- nil: literal representation of zero for variables
+##### nil: literal representation of zero for variables
 
-- '_': skip a specific variable when receiving result from function 
+##### '_': skip a specific variable when receiving result from function 
 
 ```
 for _, value =  range xxx { ... } // skip index but get value variable
 ```
 
-- __defer__ keyword: A defer statement defers the execution of a function until the surrounding function returns.
+##### __defer__ keyword: 
 
-- __pointers__: 
+A defer statement defers the execution of a function until the surrounding function returns.
+
+##### __pointers__: 
     
 __IMPORTANT NOTE__: reason why use 'pointers' is to enable to modify properties of object (struct) at any point.
 
-'*': there 2 ways to use
-
-1. indicate the variable hold a pointer
+__asterisk__ indicate the variable hold a pointer
       
 ```
 var p *int // p is a pointer
-
 ```
         
-2. indicate the pointer's underlying value (not memory address)
+__ampersand (&)__: indicate the pointer's underlying value (not memory address)
 
 ```
-var p = &i // generate pointer to i and assign the pointer to p
+(example 1)
+var p = &j // generate pointer to variable j and assign the pointer to p
+fmt.Println(*p) // print underlying value of p (pointer) called 'dereference'
+
+(example 2) assume p is pointer (var p *int = xxx or p = &i )
+  *p // represent underlying value of pointer p (actual value)
+     // also the way to access underlying value via pointer is called 'dereference'
+   
+   p = &i // generate a pointer of i and assign to p
 ```
 
-        fmt.Println(*p) // print underlying value of p (pointer)
-      ex) assume p is pointer (var p *int = xxx or p = &i )
-        *p // represent underlying value of pointer p (actual value)
-           // also the way to access underlying value via pointer is called 'dereference'
-    - "&": generate a pointer to tis operand
-      ex)
-        p = &i // generate a pointer of i and assign to p
-  
-    # different btw * vs &
-      - *: use in front of type (not variable)
-        - the variable hold the memory address of the data
-        - to store a memory address (not data) to variable
-        - also used to actual data via pointer variable (e.g., *p (p: pointer variable) => access to actual data)
-      - &: use in front of data variable (not type or pointer variable)
-        - used to access to memory address of the data variable
-  
-  - struct: a collection of fields
-  - struct pointer: access value of field via pointer of struct
-    - don't need to explicitly dereference // instead of *p.X, you can do p.X 
-  ex)
+__different btw * vs &__: 
+
+- __ * __ : __use in front of type (not variable)__
+
+
+```
+1. to store a memory address (not data) to variable
+
+var p *int
+
+2. also used to actual data via pointer variable (called dereference)
+
+*p (p: pointer variable) => access to actual data
+```
+
+- __ & __ : __use in front of data variable (not type or pointer variable)__
+
+```
+1. it is used to access to memory address of the data variable
+
+var p = &j (j: variable and assign a pointer of j to p)
+```
+
+- __pointers vs values__: 
+
+* passing pointers in Go is often slower than passing value.
+
+  this is because Go needs to perform the escape analysis to figure out if the variable should be stored on the heap or the stack. 
+
+* use pointers when copying large structs. when struct has a lot of data, you should pass a pointer rather than values
+
+* use pointers when you need to mutate. Otherwise, the variables cannot be mutated in another function.
+
+* use pointers if your API uses a pointer receiver for the consistency (other parts also use pointer receiver everywhere)
+
+* use pointers when signify true absence, which means that you want to know the value is really assigned to variables. if you use value variables, it always has a default zero value. But, if you use pointer variables, the default value is 'nil'.
+
+ref: https://medium.com/@meeusdylan/when-to-use-pointers-in-go-44c15fe04eac
+
+##### __struct__: 
+
+a collection of fields
+
+##### __struct pointer__: 
+
+to access value of field via pointer of struct
+
+don't need to explicitly dereference // instead of *p.X, you can do p.X 
+
+```
     type Vertex struct {
       X int
       Y int
@@ -187,112 +233,171 @@ var p = &i // generate pointer to i and assign the pointer to p
     p = &v
     p.X = 3
     fmt.PrintLn(v) // { 3, 1 }
+ ```
+
+is there any difference between a pointer to struct and struct? seems both can mutate its underline object.
+
+##### array
+
+- declaration) letters := [4]string{"a", "b", "c", "d"}
+- note) when specify the length, this means array
+- predefined size
+- [n]T
+- array variable does not hold an pointer to the first array element. the array variable refers to the entire array.
+-> this means when you send it as argument, a copy of its contents (not pointer)
+- usually you should use slice rather than array (since array is inflexibile (fixed length))
+- The in-memory representation of [4]int is just four integer values laid out sequentially:
     
-  - array: 
-    - declaration) letters := [4]string{"a", "b", "c", "d"}
-      - note) when specify the length, this means array
-    - predefined size
-    - [n]T
-    - array variable does not hold an pointer to the first array element. the array variable refers to the entire array.
-      -> this means when you send it as argument, a copy of its contents (not pointer)
-    - usually you should use slice rather than array (since array is inflexibile (fixed length))
-    
-  - slice: partial view of array
-    - declaration) letters := []string{"a", "b", "c", "d"}
-      - note) when don't specify the length, this means slice
-    - a slice consists of a pointer to the array (modifying element of a slice cause modifying the element of the original array)
-    - dynamically-sized
-    - []T
-    ex)
-      a[1:4] // a slice includes elements 1 through 3 of a (the last one is exclusive)
-    - all slices have its underlying array and any change to those slices affect underlying array.
-    ex)
-      []bool{1,2,3} 
-      -> create array with above element with size = 3 and then generate a slice that reference to that array
-    - len(): length => the number of elements it contains
-    - cap(): capacity => the number from the first element of the slice and the last element of underlying array
-    ex)
-      s = int{1,2,3,4,5}
-      s = s[2:] // cap = 3 
-       => {{1,2},3,4,5}
-    - extend: you can extend a slice based on the underly array if there is suffient capacity
-    - make(): create slice with all nil element with specified size
-    - append(): slice can be appended with values
-      - if underlying array is too small to append the values, Go automatically re-size the underlying array.
-    ex)
-      a = make([]int, 5) // a is a slice hold 5 'nil' elements
-    - slice can be nested; a slice can contains another slice
-    
-    - when you want to pass the array as argument, use slice instead of passing the pointer to the array
-      - this is because any change to the slice also affect to the original array
-      - so you don't need to pass the pointer to the array as argument.
-      
-      - ALSO, when you pass the slice as argument, it pass a copy of slice (its content) so if you need to modify the slice inside the called function, you need to return the updated slice and assign at the calling function.
-      
-  - escape analysis (golang feature)
-    - in C/C++, you can't return a pointer from a function. 
-    - this is because those variables are stored in stack and if the function return the pointer and done, the function including those variables are deleted once the function is done. 
-    - in golang, you can return the pointer from a function because of this escape analysis.
-    - escape analysis check the pointer of a variable is shared among diff function or not. 
-      - if so, the variables are stored in Heap (not Stack) because the variable are shared among diff function
-      - if not (only shared on the single function), the variables are stored in Stack
-      - so you can return a pointer from a function. However, this also comes with cost
-      - cost: GC.
-        - if the variable are stored in heap, GC must check the variable is used or no longer used. 
-        - therefore, if there are a lot of those variables are in Heap, it increases the time for GC.
-        - during GC, the program is getting slow. 
-        - therefore, it might affect performance. 
-        - the best choice is not to use those variables as much as possible.
+##### slice: 
+- (partial view of array) does not store any data, it just describes a section of an underlying array.
+- a descriptor of an array segment. It consists of a pointer to the array, the length of the segment, and its capacity (the maximum length of the segment).
+
+```
+type SliceHeader struct {
+      Data unitptr // a pointer to the backing array
+      Len int // length
+      Cap int // capacity
+}
+```
+
+- declaration) letters := []string{"a", "b", "c", "d"}
+- note) when don't specify the length, this means slice
+- dynamically-sized
+- []T
+
+```
+ex)
+  a[1:4] // a slice includes elements 1 through 3 of a (the last one is exclusive)
+  // all slices have its underlying array and any change to those slices affect underlying array.
+ex)
+  []bool{1,2,3} 
+  // create array with above element with size = 3 and then generate a slice that reference to that array    
+```
+
+- len(): length => the number of elements it contains
+- cap(): capacity => the number from the first element of the slice and the last element of underlying array
+
+```
+ex)
+s = int{1,2,3,4,5}
+s = s[2:] // cap = 3 
+ => {{1,2},3,4,5}
+```
+
+- extend: you can extend a slice based on the underly array if there is suffient capacity
+- make(): create slice with all nil element with specified size (dynamically-sized arrays).
+- append(): slice can be appended with values
+- if underlying array is too small to append the values, Go automatically re-size the underlying array.
+```
+ex)
+a = make([]int, 5) // a is a slice hold 5 'nil' elements
+- slice can be nested; a slice can contains another slice
+```
+ref (official tutorial): https://tour.golang.org/moretypes/11
+ref (official docs): https://go.dev/blog/slices-intro
+
+- when you want to pass the array as argument, use slice instead of passing the pointer to the array
+- this is because any change to the slice also affect to the original array
+- so you don't need to pass the pointer to the array as argument.
+
+- ALSO, when you pass the slice as argument, it pass a copy of slice (its content) so if you need to modify the slice inside the called function, you need to either return the updated slice and assign at the calling function or pass a pointer to the slice.
+
+- it is possible to modify the backing array when you pass the value of slice to a paramter in a function. 
+
+```
+func XXX(mySlice *[]int) // pass by refernce of a slice if you need to modify the slice (not array). this means changing a pointer, len, or cap of the slice
+func XXX(mySlice []int) // pass by value of a slice if you don't need to modofy the slice.
+
+* in both cases,  it still possible to modify the underline array.
+```
+
+##### escape analysis (golang feature)
+- in C/C++, you can't return a pointer from a function. 
+- this is because those variables are stored in stack and if the function return the pointer and done, the function including those variables are deleted once the function is done. 
+- in golang, you can return the pointer from a function because of this escape analysis.
+- escape analysis check the pointer of a variable is shared among different functions or not. 
+- if so, the variables are stored in Heap (not Stack) because the variable are shared among differernt functions
+- if not (only shared on the single function), the variables are stored in Stack
+- so you can return a pointer from a function. However, this also comes with cost
+- cost: GC.
+  - if the variable are stored in heap, GC must check the variable is used or no longer used. 
+  - therefore, if there are a lot of those variables are in Heap, it increases the time for GC.
+  - during GC, the program is getting slow. 
+  - therefore, it might affect performance. 
+  - the best choice is not to use those variables as much as possible.
         - conclusion: avoid to return pointer from function as much as possible
     
-  - function: is value too
-    - can be passed around just like other values as parameter.
-    - closures: a function value that references from outside its body. temp variable storage for outer function
-    ex)
-      func adder() func(int) int { // outer function
-        sum = 0
-        return func(x int) int { // inner function
-          ... sum
-          }
-      }
-      var test = adder() // a close is created for test varaible, this means test variable has dedicated sum variable (=0)
-      var test1 = adder() // same. a new closure is created for test1 variable and it gets own sum variable (=0)
+```
+// option 1) create variable at top level function and send it by a pointer and you can mutate inside called function. then, you don't need to return the pointer to the calling function.
 
-  - method: function with a special receiver argument
-    - connect function to type with a special receiver argument
-    ex)
-      type Vertex struct {
-        X, Y float64
-      }
-      func (v Vertex) abs() float64 { // (v Vertex): receiver argument
-        return math.Sqrt(v.X*v.X + v.Y*v.Y) // can use v as belonged type
-      }
-      v = Vertex{3, 4}
-      v.abs() // 
+var a = A{xxxxx}
+
+callingFunc(&a) // you can mutate the struct inside the 'callingFunc' so the change affect 'a'.
+```
+    
+##### function: is value too
+
+- can be passed around just like other values as parameter.
+- closures: a function value that references from outside its body. temp variable storage for outer function
+
+```
+func adder() func(int) int { // outer function
+  sum = 0
+  return func(x int) int { // inner function
+    ... sum
+    }
+}
+var test = adder() // a close is created for test varaible, this means test variable has dedicated sum variable (=0)
+var test1 = adder() // same. a new closure is created for test1 variable and it gets own sum variable (=0)
+```
+
+##### method: function with a special receiver argument
+
+- __receiver argument__: allows to connect a function to a type
+
+```
+type Vertex struct {
+  X, Y float64
+}
+func (v Vertex) abs() float64 { // (v Vertex): receiver argument
+  return math.Sqrt(v.X*v.X + v.Y*v.Y) // can use v as belonged type
+}
+v = Vertex{3, 4}
+v.abs() // now 'abs()' function belongs to Vertex struct
+```
       
-    - pointer receivers: receiver arugment with pointer
-      - used to modify properties of the type it blongs
-      ex)
-        func (v *Vertex) Scale(f float64) { // (v *Vertex) => pointer receivers
-          v.X = v.X * f
-          v.Y = v.Y * f
-        }
-        v = Vertex{3, 3}
-        v.Scale(2) // v.X = 6 and v.Y = 6
-        // without pointer receivers (receiver argument) like '(v Vertex)', it just pass the copy of properties
-        // and above code (Scale(2)) does not affect properties of v (v.X = 3, and v.Y = 3)
-        
-    ex)
-      func (v *Vertex) Scale(f float64)
-  - Go does not have classes.
+- __pointer receivers__: receiver arugment with pointer
+      
+- used to modify properties of the type it blongs
+
+```
+func (v *Vertex) Scale(f float64) { // (v *Vertex) => pointer receivers
+  v.X = v.X * f
+  v.Y = v.Y * f
+}
+v = Vertex{3, 3}
+v.Scale(2) // v.X = 6 and v.Y = 6
+// without pointer receivers (receiver argument) like '(v Vertex)', it just pass the copy of properties
+// and above code (Scale(2)) does not affect properties of v (v.X = 3, and v.Y = 3)
+```
+
+##### class
+
+Go does not have classes.
     
-  - interface: define a set of methods
-    - 'type InterfaceName interface { ... }' // define interface
-    - 'var a InterfaceName' // declare inteface variable
-    - 'v = DetailImpl{3, 4}' // instantiate 'DetailImpl' type
-    - 'a = v' // assign detail impl 'v' to interface 'a' and 'v' must define methods defnied in 'a' inteface
-    - no coupling to interface from detail implementation (like implements keyword). you don't need to explicitly code.
-    
+##### interface: define a set of methods
+
+- def) 'type InterfaceName interface { ... }' // define interface
+
+```
+
+```
+
+- 'var a InterfaceName' // declare inteface variable
+- 'v = DetailImpl{3, 4}' // instantiate 'DetailImpl' type
+- 'a = v' // assign detail impl 'v' to interface 'a' and 'v' must define methods defnied in 'a' inteface
+- no coupling to interface from detail implementation (like implements keyword). you don't need to explicitly code.
+
     - IMPORTANT NOTE: interesting points of 'interface'
       - any type (primitive, struct, channel, function and so on) can implement an interface
       ex)
@@ -325,7 +430,7 @@ var p = &i // generate pointer to i and assign the pointer to p
         a = &X{}
           -> interface can hold struct itself or pointer to its struct so you don't need to use a pointer to interface
     
-      - don't use a poiner to interface
+      - don't use a poiner to interface. pointers to interfaces are almost never useful (see: https://stackoverflow.com/questions/44370277/type-is-pointer-to-interface-not-interface-confusion)
       - should store pointers to struct in interface in order to modify the struct itself (e.g., a = &X{}); you can't modify the struct if you store the struct in interface (e.g., a = X{})
 ### unit testing
   - use 'testify' and 'mockery'
@@ -343,11 +448,6 @@ var p = &i // generate pointer to i and assign the pointer to p
           - when i switched to version 1.13.8, the error has gone!!!
           
 ### error handling
-  - one line error handling with if statement
-  ex)
-    if err := doStuff(); err != nil {
-      // handle the error here
-    }
     
 ### concurrency
   # goroutine (GR): lightweight version of OS thread allows us to write concurrent program
@@ -437,7 +537,13 @@ var p = &i // generate pointer to i and assign the pointer to p
     - if you use the struct as pointer variable, you need to implement the interface as pointer variable
     ex)
       func (c *SomeStruct) SomeMethod { ... }
-    
+
+  - one line error handling with if statement
+  ex)
+    if err := doStuff(); err != nil {
+      // handle the error here
+    }
+
     
 ### testify (unit testing library)
   - run only single test in test suite
