@@ -3,16 +3,16 @@
 ## Modules (PMS)
 
 - when run test ('go test'), go cli automatically install necessary deps and list to go.mod  
-- [setup]: https://github.com/golang/go/wiki/Modules
+- setup: https://github.com/golang/go/wiki/Modules
 - module name (at 'go mod init <module_name>) must match with git repository (e.g., github.com/stsiwo/repo)
       
 - mode: 2 types
-1. module-aware mode: 
+  1. module-aware mode: 
   
-- find versioned dependencies, and it typically loads packages out of the module cache, downloading modules if they are missing.
-- if you run 'go' command inside modules (a directory has go.mod file)
+    * find versioned dependencies, and it typically loads packages out of the module cache, downloading modules if they are missing.
+    * if you run 'go' command inside modules (a directory has go.mod file)
 
-3. GOPATH mode: ignores modules and it looks in vendor directories to find dependencies.
+  2. GOPATH mode: ignores modules and it looks in vendor directories to find dependencies.
 
 - vendoring: ??
 ref: https://golang.org/ref/mod#vendoring
