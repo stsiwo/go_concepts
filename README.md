@@ -13,6 +13,10 @@ There is important rule to accomplish the the above benefits, which is called th
 
 I think that this rule strongly contributes to the independence of components/layers. For example, your team decided to use RDBMS such as MySQL for your project initially. After while you release the project, you need to scale up the system for some reason. Then, you team decided to use NoSQL to take an advantage of the scalability. If you apply the Clean Architecture, you can easily replace RDBMS with NoSQL.     
 
+## Main Dependencies
+
+- [__wire__](https://github.com/google/wire): 'static' d 
+
 ## Commands
 
 - __go mod vendor__: copies of all packages needed to support builds and tests of packages in the main module in the /vendor folder.
