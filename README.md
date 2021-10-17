@@ -1,8 +1,8 @@
 # Go Project Overview
 
-## Arcitecture
+## Backend Arcitecture
 
-I apply [Clean Architecture](http://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) for any project including my Go projects.
+I usually apply [Clean Architecture](http://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) for any project including my Go projects.
 The main reason why use this architecture is to achieve [the separation of concerns](https://deviq.com/principles/separation-of-concerns). The general idea is that we should separate different concerns (e.g., Domain, UI, Application and so on) into its corresponding layer to establish well-organized systems. It has the following benefits:
 
 - __testability__: easy to test each component/concern
@@ -12,6 +12,8 @@ The main reason why use this architecture is to achieve [the separation of conce
 There is important rule to accomplish the above benefits, which is called the Depednency Rule. The rule is pretty simple. The components (e.g., classes/structs) in the higher layer can use or have dependencies of interfaces in the lower layer, not vice versa. For instance, a component in the Infrastructure layer can have dependencies of components in the Application layer, but components in the Domain layer cannot have dependencies of the Application layer. 
 
 I think that this rule strongly contributes to the independence of components/layers. For example, your team decided to use RDBMS such as MySQL for your project initially. After while you release the project, you need to scale up the system for some reason. Then, you team decided to use NoSQL to take an advantage of the scalability. If you apply the Clean Architecture, you can easily replace RDBMS with NoSQL.     
+
+## Infra Architecture
 
 ## Main Dependencies
 
@@ -37,7 +39,15 @@ I think that this rule strongly contributes to the independence of components/la
 
 ## Features
 
+### AWS API Integration
+
+### RESTFul API 
+
+### Common Flow (How to handle request at an endpoint)
+
 ## Security
+
+### JWT & Double Cookie Submission
 
 ## Code Reviews
 
