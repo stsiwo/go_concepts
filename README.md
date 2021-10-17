@@ -135,7 +135,232 @@ I usually use Swagger to design RESTful API and implement it based on the design
 
 ### Common Flow (How to handle request at an endpoint)
 
+Here is a common flow how a request is handled at this endpoint. In this example code, it demonstrates how to handle a GET reqeust to return a blog collection. 
 
+1. accept a request at the router.
+
+```
+// endpoints.go (router)
+
+// blogs
+type BlogEndpoint struct {
+}
+
+func (e *BlogEndpoint) Config(router *gin.Engine, jwt *jwt.GinJWTMiddleware, mocksParams *mocks.MockParams) {
+
+	// blogs endpoints
+	blogEndpoint := router.Group("blogs")
+	{
+		blogController := di.InitializeBlogController(mocksParams)
+
+		// public blog list request (public must be true)
+		blogEndpoint.GET("", blogController.Get)
+		...
+	}
+	...
+}
+```
+
+2. the router delegates the request to a controller.
+
+```
+// blog.go (controller)
+package controller
+
+import (
+	_ "encoding/json"
+	"github.com/gin-gonic/gin"
+	db "github.com/stsiwo/cms/domain/blog"
+	e "github.com/stsiwo/cms/err"
+	"github.com/stsiwo/cms/ui/iservice"
+	"github.com/stsiwo/cms/ui/model/view"
+	"github.com/stsiwo/cms/util"
+	"log"
+	"net/http"
+)
+
+// define controller struct for blog
+type BlogController struct {
+	service iservice.IBlogService
+}
+
+// create a provider so that this depenency is automatically injected into the client struct
+// * I use the wire package for dependency management system.
+func NewBlogController(service iservice.IBlogService) *BlogController {
+	return &BlogController{
+		service: service,
+	}
+}
+
+// create a method to handle GET requests and return a blog collection (publicity must be true)
+func (uc *BlogController) Get(c *gin.Context) {
+	var blogQueryString db.BlogQueryString
+
+	// bind query string or form
+	if err := c.Bind(&blogQueryString); err != nil {
+		log.Printf("query string binding failed: %#v", err.Error())
+	}
+	
+	// DON'T FORGET SET PUBLIC TO BE TRUE
+	blogQueryString.SetPublic(db.PublicOnly)
+
+	// prepare a response view model
+	viewModel := view.BlogListResponseViewModel{}
+
+	// call its service struct and delegate application logic to it.
+	// if there is an error, return the error response with the status code.
+	if err := uc.service.GetAll(blogQueryString, &viewModel); err != nil {
+		apiErr := err.(*e.ApiErr)
+		c.JSON(apiErr.Code, gin.H{
+			"code":    apiErr.Code,
+			"message": apiErr.Message,
+		})
+		return
+	}
+
+	// if succeeded, return the collection with the status code.
+	c.JSON(http.StatusOK, gin.H{
+		"code":    http.StatusOK,
+		"message": "get blog list success (GET)",
+		"data":    viewModel,
+	})
+}
+...
+```
+
+3. the controller delegate its task to a service.
+
+```
+// blog.go (service)
+package service
+
+import (
+	"log"
+
+	"github.com/jinzhu/copier"
+	"github.com/jinzhu/gorm"
+	"github.com/stsiwo/cms/app/irepository"
+	db "github.com/stsiwo/cms/domain/blog"
+	"github.com/stsiwo/cms/infra/model"
+	"github.com/stsiwo/cms/infra/pagination"
+	"github.com/stsiwo/cms/ui/model/view"
+	"github.com/stsiwo/cms/util"
+)
+
+// define a service struct for blog
+type BlogService struct {
+	repo irepository.IBlogRepository
+	db   *gorm.DB
+}
+
+// create a provider so that this depenency is automatically injected into the client struct
+// * I use the wire package for dependency management system.
+func NewBlogService(repo irepository.IBlogRepository, db *gorm.DB) *BlogService {
+	return &BlogService{
+		repo: repo,
+		db:   db,
+	}
+}
+
+func (uc *BlogService) GetAll(qs db.BlogQueryString, vm *view.BlogListResponseViewModel) error {
+	log.Printf("start handling get all service at blog service \n")
+
+	blogList := []model.Blog{}
+	viewBlogList := []view.BlogListViewModel{}
+
+	// find blog by id	
+	// need to pass a pointer to 'blogList' slice to update it inside this called function.
+	if err := uc.repo.GetAll(qs, &blogList); err != nil {
+		log.Printf("get a blog list failed: %#v \n", err)
+		return err
+	}
+
+	// convert from data model to view model
+	copier.Copy(&viewBlogList, blogList)
+
+	// query to get count all blog for pagination
+	var totalCount int
+	if err := uc.repo.CountAll(qs, &totalCount); err != nil {
+		log.Printf("get a blog count all failed: %#v \n", err)
+		return err
+	}
+
+	// construct pagination struct
+	pagination := view.Pagination{
+		Page:  qs.Page,
+		Limit: qs.Limit,
+		// default total page button number is 5
+		PageLinks:  pagination.GeneratePaginationLink(totalCount, qs.Limit, qs.Page, 5),
+		TotalCount: totalCount,
+		MaxPageNum: pagination.CalculateMaxPageNumber(totalCount, qs.Limit),
+	}
+
+	// fill view model with data
+	vm.Blogs = viewBlogList
+	vm.Pagination = pagination
+
+	// return view model
+	return nil
+}
+...
+```
+
+```
+// blog.go (repository)
+package repository
+
+import (
+	"html"
+	"log"
+	"strings"
+
+	"github.com/jinzhu/gorm"
+	db "github.com/stsiwo/cms/domain/blog"
+	e "github.com/stsiwo/cms/err"
+	"github.com/stsiwo/cms/infra/model"
+	qb "github.com/stsiwo/cms/infra/query/blog"
+	"github.com/stsiwo/cms/util"
+)
+
+// define a repository struct for blog
+type BlogRepository struct {
+	db    *gorm.DB
+	query qb.IQuery
+}
+
+// create a provider so that this depenency is automatically injected into the client struct
+// * I use the wire package for dependency management system.
+func NewBlogRepository(db *gorm.DB, query qb.IQuery) *BlogRepository {
+	return &BlogRepository{
+		db:    db,
+		query: query,
+	}
+}
+
+...
+
+// only public blog list
+func (uc *BlogRepository) GetAll(qs db.BlogQueryString, blogs *[]model.Blog) error {
+	log.Println("start handling get all a blog request at blog repository")
+
+	// statement with scope condition; include category domain
+	stm := uc.db.Preload("User").Preload("Categories")
+
+	// apply query param to filter/sort the blog collection
+	stm = uc.query.ApplyConditions(stm, qs, false)
+
+	// Preload allow to load with related roles
+	if stm.Find(blogs).RecordNotFound() {
+		log.Println("the provided blog does not exist")
+		return &e.ApiErr{Err: nil, Message: "the provided blogs does not exist", Code: 404}
+	}
+
+	return nil
+}
+
+...
+```
+5. the controller return the response. 
 
 ### Testing
 
