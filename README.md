@@ -115,11 +115,153 @@ func (e *S3) Upload(file multipart.File, newFileName string, bucketName string) 
 // omit other methods for brivety.
 ```
 
-### RESTFul API 
+### RESTful API 
 
-I usually use Swagger to design RESTFul API and implement it based on the design. 
+I usually use Swagger to design RESTful API and implement it based on the design. The basic steps that I use to design the API is the following (assuming that I identified the client requirement):
+
+1. identify the resources
+2. identify the HTTP methods 
+  - GET: to get a resource or collection of resources.
+  - POST: to create a resource or collection of resources.
+  - PUT: to replace the existing resource or collection of resources.
+  - PATCH: to partially update the existing resource or collection of resources.
+  - DELETE: to delete the existing resource or the collection of resources.
+3. identify query paramters (e.g., limit, offset, sort, and so on)
+4. identify HTTP response status code (e.g., 200, 201, 400, 500, and so on)
+5. identify the protected resources with user roles. (e.g., which user role can access which endpoint)
+6. identify HATEOAS (e.g., links to the next possible endpoints)
+
+![RESTful API Design With Swagger](./swagger-screenshot-1.png)
 
 ### Common Flow (How to handle request at an endpoint)
+
+
+
+### Testing
+
+use testify as testing package for my Go project. Here is my example code to test /blogs endpoints with 'sort' query param to make sure that the collection in the response properly sorted.
+
+```
+package blogs
+
+import (
+	"encoding/json"
+	"io/ioutil"
+	"log"
+	"net/http/httptest"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
+	"github.com/stretchr/testify/suite"
+	"github.com/stsiwo/cms/infra"
+	"github.com/stsiwo/cms/infra/model"
+	"github.com/stsiwo/cms/mocks"
+	"github.com/stsiwo/cms/router"
+	"github.com/stsiwo/cms/util"
+)
+
+// BeforeTest(suiteName, testName string) - Runs right before the test starts
+// AfterTest(suiteName, testName string) - Runs right after the test finishes
+// SetupSuite() - Runs before the tests in the suite
+// SetupTest() - Runs before each test in the suite
+// TearDownTest() - Runs after each test in the suite
+// TearDownSuite() - Runs after all the tests in the suite have been run
+
+// This is our suite
+type BlogEndpointSuite struct {
+	suite.Suite
+	db *gorm.DB
+}
+
+// This gets run automatically by `go test` so we call `suite.Run` inside it
+func TestSuite(t *testing.T) {
+	// This is what actually runs our suite
+	suite.Run(t, new(BlogEndpointSuite))
+}
+
+// lifecycle methods
+
+func (suite *BlogEndpointSuite) SetupSuite() {
+	// Initialize things or do any setup stuff inside here
+	log.Println("setup suite")
+	suite.db = infra.SetupDB()
+	Seed(suite.db)
+}
+
+// This method gets run before each test in the suite
+func (suite *BlogEndpointSuite) SetupTest() {
+	// Initialize things or do any setup stuff inside here
+	log.Println("setup test")
+	// transaction start db
+}
+
+// This method gets run before each test in the suite
+func (suite *BlogEndpointSuite) TearDownTest() {
+	// Initialize things or do any setup stuff inside here
+	log.Println("teardown test")
+	// transaction rollback db
+}
+
+func (suite *BlogEndpointSuite) TearDownSuite() {
+	// Initialize things or do any setup stuff inside here
+	log.Println("teardown suite")
+	// suite.tx.Rollback()
+	CleanUpAllRecords(suite.db)
+	suite.db.Close()
+}
+
+// test the /blogs endpoint with sort query param to make sure that 
+// the blog collection in the response is properly sorted alphabetically (ascending order) 
+func (suite *BlogEndpointSuite) TestBlogListGetEndpointShouldSortBasedOnTheSortQueryStringAlphaAsc() {
+	// sort is 2 (alpha asc)
+
+	// setup router
+	setupRouter := router.NewSetupRouter()
+	router := setupRouter.Setup(&mocks.MockParams{})
+
+	// run test server
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	// setup client
+	client := ts.Client()
+
+	// start request to test server
+	res, err := client.Get(ts.URL + "/blogs?sort=2")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// parsing body
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var bodyMap map[string]interface{}
+	json.Unmarshal(body, &bodyMap)
+
+	// asserting
+	suite.Equal(res.StatusCode, 200)
+	blogs := bodyMap["data"].(map[string]interface{})["blogs"]
+	for i := 0; i < len(blogs.([]interface{}))-1; i++ {
+
+		// sort check
+		firstTitle := blogs.([]interface{})[i].(map[string]interface{})["title"].(string)
+		nextTitle := blogs.([]interface{})[i+1].(map[string]interface{})["title"].(string)
+
+		log.Printf("first date: %#v", firstTitle)
+		log.Printf("next date: %#v", nextTitle)
+
+		suite.True(firstTitle[0:1] <= nextTitle[0:1])
+	}
+}
+
+```
 
 ## Security
 
@@ -130,4 +272,3 @@ I usually use Swagger to design RESTFul API and implement it based on the design
 I usually follow [the coding guideline](https://github.com/golang/go/wiki/CodeReviewComments) 
 
 1. use gofmt (go formatter package).
-
