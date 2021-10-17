@@ -37,9 +37,7 @@ I think that this rule strongly contributes to the independence of components/la
 
 ## Features
 
-##　Security
-
-## 
+## Security
 
 ## Code Reviews
 
