@@ -41,7 +41,83 @@ I think that this rule strongly contributes to the independence of components/la
 
 ### AWS API Integration
 
+I integrated with S3 to store images sent from clients such as blog and profile images. the below code is an example to upload an image from my Go app to S3.
+
+```
+// s3.go 
+ackage aws
+
+import (
+	"log"
+	"mime/multipart"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	er "github.com/stsiwo/cms/err"
+	"github.com/stsiwo/cms/external"
+)
+
+// define struct for S3
+type S3 struct {
+	client   external.IS3Client
+	uploader external.IS3Uploader
+  cacheControlValue string
+}
+
+// create a provider so that this depenency is automatically injected into the client struct
+// * I use the wire package for dependency management system.
+func NewS3(client external.IS3Client, uploader external.IS3Uploader) *S3 {
+	return &S3{
+		client:   client,
+		uploader: uploader,
+    cacheControlValue: "max-age=31536000",
+	}
+}
+
+// use versioning of s3
+//  - without any file extension to be consistent with its name when uploading so can put in the same object
+//  - when user upload a file (xxx.png), change its name to uuid and use this uuid as object name for this avatarImage
+//  - when user update the file (yyy.jpg), first retrieve the user's file name from db 
+//    and just update its body (file itself) but keep its name for preserving previous version in the case of failure
+
+
+// create a method called 'Upload' to upload an image to S3
+func (e *S3) Upload(file multipart.File, newFileName string, bucketName string) (string, string, error) {
+	log.Println("start handling upload function at s3 (infra)")
+
+	// prep Upload Input
+	upParams := &s3manager.UploadInput{
+		Bucket: &bucketName,
+		Key:    &newFileName,
+		Body:   file,
+    	CacheControl: &e.cacheControlValue,
+	}
+
+	// upload to s3
+	result, err := e.uploader.Upload(upParams, func(u *s3manager.Uploader) {
+		u.PartSize = 10 * 1024 * 1024 // 10MB part size.
+	})
+ 
+ // if failed, return error message.
+	if err != nil {
+		log.Printf("err during requesting upload to aws s3: %#v", err.Error())
+		return "", "", &er.ApiErr{Err: nil, Message: "error during uploading image to s3 service", Code: 500}
+	}
+ 
+	// if succeeded, return its url and version id of the s3 object.
+	log.Printf("uploading success and the version id is: %#v", *result.VersionID)
+	log.Printf("uploading success and the location is: %#v", result.Location)
+	return result.Location, *result.VersionID, nil
+}
+
+// omit other methods for brivety.
+```
+
 ### RESTFul API 
+
+I usually use Swagger to design RESTFul API and implement it based on the design. 
 
 ### Common Flow (How to handle request at an endpoint)
 
