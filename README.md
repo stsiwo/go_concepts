@@ -1,39 +1,20 @@
 # CMS Project Overview
 
-## Backend Arcitecture
+## Description 
 
-I usually apply [Clean Architecture](http://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) for any project including my Go projects.
-The main reason why use this architecture is to achieve [the separation of concerns](https://deviq.com/principles/separation-of-concerns). The general idea is that we should separate different concerns (e.g., Domain, UI, Application and so on) into its corresponding layer to establish well-organized systems. It has the following benefits:
+A content management system to manage your blogs easily. The system is built with Go as the backend and React.js as the frontend. 
 
-- __testability__: easy to test each component/concern
-- __independence__: easy to replace a component with a new one including external/internal dependencies (e.g., DB, Web Framework, any external API)
-- __decouping__: reduce regression errors if one of the component/concern need to be changed. 
+## Features
 
-There is important rule to accomplish the above benefits, which is called the Depednency Rule. The rule is pretty simple. The components (e.g., classes/structs) in the higher layer can use or have dependencies of interfaces in the lower layer, not vice versa. For instance, a component in the Infrastructure layer can have dependencies of components in the Application layer, but components in the Domain layer cannot have dependencies of the Application layer. 
-
-![Backend Architecture Image](./go-architecture.png)
-
-I think that this rule strongly contributes to the independence of components/layers. For example, your team decided to use RDBMS such as MySQL for your project initially. After while you release the project, you need to scale up the system for some reason. Then, you team decided to use NoSQL to take an advantage of the scalability. If you apply the Clean Architecture, you can easily replace RDBMS with NoSQL.     
-
-## Infra Architecture
-
-I mainly used AWS and Docker to design and implement the infrastructure. 
-
-![Backend Architecture Image](./infra-architecture.png)
-
-### AWS
-
-- __EC2__: a vertial machine. I used two EC2 instances for both the frontend SPA and the backend API. 
-
-- __S3__: used for storing images (e.g., blog/profile), log files, and backup files. I integrated my API with S3 so that my API can send requests for uploading, updating, deleting objects in S3 programmatically.
-
-- __SES__: used for sending email to the owner when a contact form was submitted.
-
-- __SNS__ and __Lambda__: used for handling received email from users. When SES received an email, SNS issues a notification and a subscribed lambda function is executed. The lambda function forwards the received email to the owner's private email address.
-
-- __CloudWatch__: used for handling scheduled tasks with cron. For example, I used it for renewing SSL certificates of my SPA and API. 
-
-- __Route53__: route incoming requests to my ec2 instances. 
+- __Blog Management__: the admin can create/update/delete its own blogs.
+- __Category Management__: the admin can create/update/delete its own categories.
+- __Account Management__: the admin can update its own account information (e.g., name, email, password, profile image, and so on)
+- __Auto Save Features__: when the admin is writing a blog, every time he edit the blog, it automatically save the change without clicking 'save' button.
+- __Rich Text Editor__: the admin does not need to write any code when writing a blog. this has the following main features:
+  * change text style, size, and font.
+  * insert any image and video. The image is automatically uploaded to S3 bucket. 
+  * insert advertisement code (e.g., AdSense code) inside a blog content.
+  * insert bubble comments/conversations to make the content easier to understand.   
 
 ## Main Dependencies
 
@@ -72,6 +53,42 @@ I mainly used AWS and Docker to design and implement the infrastructure.
 - [__Webpack__](https://webpack.js.org/): (v4.32.2) a module bundler. 
 
 - [__Jest__](https://jestjs.io/): (v3.9.5) the main testing library for js.
+
+
+## Backend Arcitecture
+
+I usually apply [Clean Architecture](http://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) for any project including my Go projects.
+The main reason why use this architecture is to achieve [the separation of concerns](https://deviq.com/principles/separation-of-concerns). The general idea is that we should separate different concerns (e.g., Domain, UI, Application and so on) into its corresponding layer to establish well-organized systems. It has the following benefits:
+
+- __testability__: easy to test each component/concern
+- __independence__: easy to replace a component with a new one including external/internal dependencies (e.g., DB, Web Framework, any external API)
+- __decouping__: reduce regression errors if one of the component/concern need to be changed. 
+
+There is important rule to accomplish the above benefits, which is called the Depednency Rule. The rule is pretty simple. The components (e.g., classes/structs) in the higher layer can use or have dependencies of interfaces in the lower layer, not vice versa. For instance, a component in the Infrastructure layer can have dependencies of components in the Application layer, but components in the Domain layer cannot have dependencies of the Application layer. 
+
+![Backend Architecture Image](./go-architecture.png)
+
+I think that this rule strongly contributes to the independence of components/layers. For example, your team decided to use RDBMS such as MySQL for your project initially. After while you release the project, you need to scale up the system for some reason. Then, you team decided to use NoSQL to take an advantage of the scalability. If you apply the Clean Architecture, you can easily replace RDBMS with NoSQL.     
+
+## Infra Architecture
+
+I mainly used AWS and Docker to design and implement the infrastructure. 
+
+![Backend Architecture Image](./infra-architecture.png)
+
+### AWS
+
+- __EC2__: a vertial machine. I used two EC2 instances for both the frontend SPA and the backend API. 
+
+- __S3__: used for storing images (e.g., blog/profile), log files, and backup files. I integrated my API with S3 so that my API can send requests for uploading, updating, deleting objects in S3 programmatically.
+
+- __SES__: used for sending email to the owner when a contact form was submitted.
+
+- __SNS__ and __Lambda__: used for handling received email from users. When SES received an email, SNS issues a notification and a subscribed lambda function is executed. The lambda function forwards the received email to the owner's private email address.
+
+- __CloudWatch__: used for handling scheduled tasks with cron. For example, I used it for renewing SSL certificates of my SPA and API. 
+
+- __Route53__: route incoming requests to my ec2 instances. 
 
 ## Implementations
 
