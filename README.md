@@ -17,7 +17,13 @@ I think that this rule strongly contributes to the independence of components/la
 
 ## Infra Architecture
 
+I mainly used AWS and Docker to design and implement the infrastructure. 
+
 ![Backend Architecture Image](./infra-architecture.png)
+
+### AWS
+
+- __EC2__: a vertial machine. I used two EC2 instances for both the frontend SPA and the backend API. 
 
 - __S3__: used for storing images (e.g., blog/profile), log files, and backup files. I integrated my API with S3 so that my API can send requests for uploading, updating, deleting objects in S3 programmatically.
 
@@ -69,7 +75,7 @@ I think that this rule strongly contributes to the independence of components/la
 
 ## Implementations
 
-### AWS API Integration
+### AWS API Integration (Go)
 
 I integrated with S3 to store images sent from clients such as blog and profile images. the below code is an example to upload an image from my Go app to S3.
 
@@ -145,7 +151,7 @@ func (e *S3) Upload(file multipart.File, newFileName string, bucketName string) 
 // omit other methods for brivety.
 ```
 
-### RESTful API 
+### RESTful API (Go)
 
 I usually use Swagger to design RESTful API and implement it based on the design. The basic steps that I use to design the API is the following (assuming that I identified the client requirement):
 
@@ -163,7 +169,7 @@ I usually use Swagger to design RESTful API and implement it based on the design
 
 ![RESTful API Design With Swagger](./swagger-screenshot-1.png)
 
-### Common Flow (How to handle request at an endpoint)
+### Common Flow (Go)
 
 Here is a common flow how a request is handled at this endpoint. In this example code, it demonstrates how to handle a GET reqeust to return a blog collection. 
 
@@ -392,7 +398,7 @@ func (uc *BlogRepository) GetAll(qs db.BlogQueryString, blogs *[]model.Blog) err
 ```
 5. the controller return the response. 
 
-### Testing
+### Testing (Go)
 
 use testify as testing package for my Go project. Here is my example code to test /blogs endpoints with 'sort' query param to make sure that the collection in the response properly sorted.
 
@@ -518,6 +524,254 @@ func (suite *BlogEndpointSuite) TestBlogListGetEndpointShouldSortBasedOnTheSortQ
 
 ```
 
+### Admin Blog List Component (React & TypeScript)
+
+This is a blog management compoent for admin user. The component is in charge of displaying all blogs and handling any delete/edit click event when the admin click one of the buttons. 
+
+```
+// blogManagement.tsx
+type OptionType = {
+  label: string
+  value: CategoryType
+}
+
+const BlogManagement: React.FunctionComponent<{}> = (props) => {
+
+  // router history
+  const history = useHistory();
+
+  // get cur filters from mem selector
+  const curFilters = useSelector(mSelector.makeAdminBlogFiltersSelector())
+
+  // get cur fetch status from mem selector
+  const currentBlogsFetchStatus = useSelector(mSelector.makeBlogsFetchStatusSelector())
+
+  // get cur blog list from mem selector
+  const { data: curBlogList, pagination: curPagination } = useSelector(mSelector.makeAdminBlogSearchResultSelector())
+
+  const dispatch = useDispatch()
+
+  // dispatch action to fetch blogs only once
+  React.useEffect(() => {
+    dispatch(requestFetchAdminBlogsActionCreator())
+  }, [
+      JSON.stringify(curFilters)
+    ])
+
+  // typeahead temp state for 'keyword' (1)
+  // assign curSearchKeywordState as default value since this component is shared by other components 
+  // which exists on the same page, so if you put empty string as default value, the empty string is used for 
+  // the action and it is dispatched. then, shows search result with the empty string keyword.
+  const [curTypeAheadKeywordState, setTypeAheadKeywordState]  = React.useState<string>(curFilters.keyword)
+
+  // use effect for type ahead (2)
+  React.useEffect(() => {
+    dispatch(updateAdminBlogKeywordFilterActionCreator(curTypeAheadKeywordState))
+  }, [
+    JSON.stringify(curTypeAheadKeywordState)
+  ])
+
+  // keyword input change event handler (3)
+  const handleKeywordFilterInputEvent: React.EventHandler<React.ChangeEvent<HTMLInputElement>> = React.useCallback((e) => {
+    setTypeAheadKeywordState(e.currentTarget.value) 
+  }, [setTypeAheadKeywordState])
+
+  // delete trigger
+  const [curDeleteBlogTrigger, setDeleteBlogTrigger] = React.useState<boolean>(false)
+
+  // popup for delete confirmation
+  const { curPopup, setPopup } = usePopup({})
+
+  // category selection event handler
+  const handleCategorySelectionChangeEvent: (value: OptionType, actionMeta: ActionMeta) => void = React.useCallback((value, actionMeta) => {
+    dispatch(blogFilterCategoryActions.update(value.value.name))
+  }, [dispatch])
+
+  // start date selection event handler
+  const handleStartDateSelectionChangeEvent: (date: Date) => void = React.useCallback((date) => {
+    dispatch(blogFilterStartDateActions.update(date))
+  }, [dispatch])
+
+  // start date deletion click event handler
+  const handleStartDateDeleteClickEvent: () => void = React.useCallback(() => {
+    dispatch(blogFilterStartDateActions.clear())
+  }, [dispatch])
+
+  // end date selection event handler
+  const handleEndDateSelectionChangeEvent: (date: Date) => void = React.useCallback((date) => {
+    dispatch(blogFilterEndDateActions.update(date))
+  }, [dispatch])
+
+  // end date deletion click event handler
+  const handleEndDateDeleteClickEvent: () => void = React.useCallback(() => {
+    dispatch(blogFilterEndDateActions.clear())
+  }, [dispatch])
+
+
+  // public input change event handler
+  const handlePublicFilterInputEvent: React.EventHandler<React.ChangeEvent<HTMLInputElement>> = React.useCallback((e) => {
+    dispatch(blogFilterPublicActions.update(e.currentTarget.value as unknown as PublicOptionEnum))
+  }, [dispatch])
+
+  // sort input change event handler
+  const handleSortFilterInputEvent: React.EventHandler<React.ChangeEvent<HTMLInputElement>> = React.useCallback((e) => {
+    dispatch(blogFilterSortActions.update(e.currentTarget.value as unknown as BlogSortEnum))
+  }, [dispatch])
+
+  // handle pagination btn click event
+  const handlePaginationBtnClick: React.EventHandler<React.MouseEvent<HTMLButtonElement>> = React.useCallback((e) => {
+    dispatch(blogFilterPageActions.update(e.currentTarget.value as unknown as number))
+  }, [dispatch])
+
+  // blog delete click event handler
+  const { currentRequestStatus: currentDeleteBlogFetchStatus, setRequestStatus: setDeleteBlogFetchStatus, sendRequest: requestDeleteBlog } = useRequest({})
+  const handleBlogDeleteClickEvent: React.EventHandler<React.MouseEvent<HTMLDivElement>> = (e) => {
+    let targetBlogId = e.currentTarget.getAttribute("data-blog-id")
+
+    requestDeleteBlog({
+      path: '/users/' + appConfig.ownerId + "/blogs/" + targetBlogId,
+      method: RequestMethodEnum.DELETE,
+      useCache: false,
+      allowCache: false,
+    })
+      // call from previous 'catch' and 'then' of 'fetchBlog'
+      // since resolve promise in the 'catch'
+      .then((result: ResponseResultType<any>) => {
+        log("new category response result")
+        log(result)
+        if (result.status === ResponseResultStatusEnum.SUCCESS) {
+          setDeleteBlogTrigger(!curDeleteBlogTrigger)
+          dispatch(resetCacheAfterBlogUpdateActionCreator())
+        }
+        if (result.status === ResponseResultStatusEnum.FAILURE) {
+          // show error message
+          setPopup((prev: PopupStateType) => ({
+            ...prev,
+            title: "失敗！",
+            message: result.errorMsg,
+            type: PopupMessageTypeEnum.Error,
+            curState: true,
+          }))
+        }
+      })
+  }
+
+  // handle delete click event handler
+  const handleTogglePopupForDeleteBlogClickEvent: React.EventHandler<React.MouseEvent<HTMLElement>> = (e) => {
+    let targetBlogId = e.currentTarget.getAttribute("data-blog-id")
+    setPopup((prev: PopupStateType) => ({
+      ...prev,
+      title: appConfig.message.popup.blogDeleteConfirmation.title,
+      message: appConfig.message.popup.blogDeleteConfirmation.message,
+      type: appConfig.message.popup.blogDeleteConfirmation.type,
+      curState: true,
+      confirmBtns: {
+        onConfirm: handleBlogDeleteClickEvent
+      },
+      extraProps: {
+        ['data-blog-id']: targetBlogId
+      }
+    }))
+  }
+
+
+  // blog edit click event handler
+  const handleBlogEditClickEvent: React.EventHandler<React.MouseEvent<HTMLDivElement>> = (e) => {
+    let targetBlogId = e.currentTarget.getAttribute("data-blog-id")
+    history.push(`/admin/edit-blog-management/` + targetBlogId)
+  }
+
+  // move to new blog page when new blog icon is clicked
+  const handleNewBlogIconClick: React.EventHandler<React.MouseEvent<HTMLDivElement>> = (e) => {
+    let newBlogId = getUuidv4()
+    history.push(`/admin/edit-blog-management/` + newBlogId)
+  }
+
+  // render editable blog list
+  const renderEditableBlogItems: () => React.ReactNode = () => {
+    return curBlogList.map((blog: BlogType) => {
+      return (blog ? 
+        <EditableBlog blog={blog} key={blog.id} onEdit={handleBlogEditClickEvent} onDelete={handleTogglePopupForDeleteBlogClickEvent} /> : null
+      )
+    })
+  }
+
+  return (
+    <div className="admin-blog-management-wrapper">
+      <h2 className="admin-content-title">
+        {"ブログ管理"}
+      </h2>
+      <div className="admin-filter-wrapper">
+        <h3 className="admin-filter-title">
+          {"絞り込み"}
+        </h3>
+        <div className="admin-filter-content">
+          <KeywordFilter
+            curState={curTypeAheadKeywordState}
+            onInputChange={handleKeywordFilterInputEvent}
+            inputWrapperClassName={"admin-blog-management-filter-input-wrapper"}
+          />
+          <CategoryFilter
+            curState={curFilters.category}
+            onInputChange={handleCategorySelectionChangeEvent}
+            inputWrapperClassName={"admin-blog-management-filter-input-wrapper"}
+          />
+          <DateFilter
+            curStartDateState={curFilters.startDate}
+            curEndDateState={curFilters.endDate}
+            onStartDateChange={handleStartDateSelectionChangeEvent}
+            onEndDateChange={handleEndDateSelectionChangeEvent}
+            onStartDateDelete={handleStartDateDeleteClickEvent}
+            onEndDateDelete={handleEndDateDeleteClickEvent}
+            inputWrapperClassName={"admin-blog-management-filter-input-wrapper"}
+          />
+        </div>
+        <PublicFilter
+          curState={curFilters.public}
+          onInputChange={handlePublicFilterInputEvent}
+        />
+      </div>
+      <div className="admin-sort-wrapper">
+        <h3 className="admin-filter-title">
+          {"並び替え"}
+        </h3>
+        <BlogSort
+          curState={curFilters.sort}
+          onInputChange={handleSortFilterInputEvent}
+        />
+      </div>
+      {(currentBlogsFetchStatus === ResponseResultStatusEnum.FETCHING && 
+        <Loading />
+      )}
+      <div className="admin-blog-result-wrapper">
+        {curBlogList && curBlogList.length > 0 && renderEditableBlogItems()}
+      </div>
+      <div className="admin-blog-pagination-btn-wrapper">
+        {(Object.keys(curPagination).length > 0 &&  // check object is empty or not
+          <Pagination
+            curPage={curFilters.page}
+            maxPage={curPagination.maxPage}
+            pageLinks={curPagination.pageLinks}
+            onClick={handlePaginationBtnClick}
+          />
+        )}
+      </div>
+      {(curPopup.curState &&
+        <Popup
+          curPopup={curPopup}
+          setPopup={setPopup}
+        />
+      )}
+      <div className="icon-wrapper right-btm-fixed-btn" onClick={handleNewBlogIconClick} role="go-back-site-btn">
+        <img src={PlusSvg} className="icon" />
+      </div>
+    </div>
+  )
+}
+
+export default BlogManagement
+```
+
 ## RDBMS (MySQL) 
 
 design and implement RDBMS.
@@ -528,7 +782,7 @@ design and implement RDBMS.
   - One-To-Many: put a foreign key field on "Many" table.
   - Many-To-Many: create a join table and put primary key of both tables into the join table as foreign keys
 3. identify the cascading (e.g., how to deal with child tables when the parent is updated/deleted)
-4. identify the index to boost performance. (e.g., ) ===========review again
+4. identify the index to boost performance. (e.g., columns that often used in 'where' or 'join' clause.)
 
 ## Security
 
