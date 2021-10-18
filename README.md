@@ -1,4 +1,4 @@
-# Go Project Overview
+# CMS Project Overview
 
 ## Backend Arcitecture
 
@@ -17,7 +17,21 @@ I think that this rule strongly contributes to the independence of components/la
 
 ## Infra Architecture
 
+![Backend Architecture Image](./infra-architecture.png)
+
+- __S3__: used for storing images (e.g., blog/profile), log files, and backup files. I integrated my API with S3 so that my API can send requests for uploading, updating, deleting objects in S3 programmatically.
+
+- __SES__: used for sending email to the owner when a contact form was submitted.
+
+- __SNS__ and __Lambda__: used for handling received email from users. When SES received an email, SNS issues a notification and a subscribed lambda function is executed. The lambda function forwards the received email to the owner's private email address.
+
+- __CloudWatch__: used for handling scheduled tasks with cron. For example, I used it for renewing SSL certificates of my SPA and API. 
+
+- __Route53__: route incoming requests to my ec2 instances. 
+
 ## Main Dependencies
+
+### Backend 
 
 - [__Go Module__](https://go.dev/blog/using-go-modules): the main package management system. 
 
@@ -39,7 +53,21 @@ I think that this rule strongly contributes to the independence of components/la
  
 - [__testify__](https://github.com/stretchr/testify): (v1.5.1) unit/integration testing library
 
-## Features
+### Frontend
+
+- [__React__](https://reactjs.org/): (v16.8.6) the main library for dom creation.
+
+- [__ReactQuill__](https://quilljs.com/): (v1.3.5) a rich text editor library to allow my users to create blog content without writing code.
+
+- [__Redux__](https://redux.js.org/): (v7.2.1) a state management system for React.js
+
+- [__TypeScript__](https://www.typescriptlang.org/): (v3.9.5) a type system for JS.
+
+- [__Webpack__](https://webpack.js.org/): (v4.32.2) a module bundler. 
+
+- [__Jest__](https://jestjs.io/): (v3.9.5) the main testing library for js.
+
+## Implementations
 
 ### AWS API Integration
 
@@ -522,6 +550,5 @@ design and implement RDBMS.
 
 ## Code Reviews
 
-I usually follow [the coding guideline](https://github.com/golang/go/wiki/CodeReviewComments) 
+follow [the coding guideline](https://github.com/golang/go/wiki/CodeReviewComments) 
 
-1. use gofmt (go formatter package).
