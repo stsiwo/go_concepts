@@ -502,7 +502,21 @@ design and implement RDBMS.
 
 ## Security
 
-### JWT & Double Cookie Submission
+  - __Content Security Policy__: list trusted domains and the scripts allow to be executed. Otherwise, CSP blocks executing scripts provided by untrusted domains (any domain is not listed in CSP). This mitigates XSS attacks. 
+ 
+  - __CORS__: when a domain (let's say domain A) access to another domain (domain B) to retrieve resources, the domain B can control which domain (esp, cross domains) can access to my resource.  
+ 
+  - __Sanitize All User Input__: To prevent XSS attack and SQL injection. in the front end and back end, don't forget to validate input and sanitize it.
+ 
+  - __No Dynamic Query__: To prevent SQL inject. in any ORM, you always should use parameter binding (e.g., 'setParamter') and don't do like this (e.g., "SELECT x from " + input + "...")
+ 
+  - __JWT HttpOnly & Secure Cookie and [Double Submit Cookie](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)__: JWT is a better approach than HTTP Basic Authentication with a password. a client sends the credential only once and exchanges it a token (a.k.a JWT) with expiry, and use it to access protected resources. Now, the problem is where to store the JWT in the front end. If you store in session or local storage in browsers, it is under the target of XSS since js can access that storage. The more secure approach is to use httpOnly & Secure Cookie (e.g., js cannot access and send over TLS only) and put the token in the cookie. However, httpOnly cookie is well known as a target of CSRF. If a malicious attacker sends a link that requests to the authorized website, it might result in unwanted results for the victim. That's why I use the Double Submit Cookie technique. You need to add a token (a.k.a CSRF token) and ask auth users to send it with a header, and the server verifies the CSRF token in header and cookie match each other. this mitigates CSRF attacks. 
+ 
+  - __Security Headers__: Don't forget the following security headers in your web servers:
+    * Strict-Transport-Security: Tell browsers that it should only be accessed using HTTPS (no HTTP). Many websites configure redirect from HTTP to HTTPS. This redirect creates a security hole such as a man-in-the-middle-attack. Therefore, setting this header prevents the security hole.
+    * X-Frame-Options: Prevent the target page from being framed by another website. the difference btw frame-src (CSP) and X-Frame-Options is that frame-src restricts other resources. On the other hand, X-Frame-Options is used to restrict your page to be framed by other domains.
+    * X-XSS-Protection: Used for only old browsers which don't support CSP, but you still should add this header.
+    * X-Content-Type-Options: To prevent MIME sniffing (e.g., browsers try to correct the wrong extension and execute the file). This creates a security hole. for example, If malicious users upload a JS file as an image file and when other users access the website, the browser executes the js file by sniffing.
 
 ## Code Reviews
 
