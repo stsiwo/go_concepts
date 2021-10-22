@@ -557,6 +557,59 @@ should store pointers to struct in interface in order to modify the struct itsel
       // handle the error here
     }
 
+## Naming Convension
+
+### MixedCaps
+
+#### visible outside the package
+
+e.g., MxiedCaps
+
+#### hidden outside the package
+
+e.g., mixedCaps
+
+### Interface
+
+Methodname + er = InterfaceName
+
+e.g., Reader, Writer, Formatter, CloseNotifier
+
+### Shorter variable names (Unwritten Rule)
+
+### single-letter identifier
+
+used for local variables with limited scope.
+
+```
+// i is local variables and scope is limited inside the for loop
+for i := 0; i < len(pods); i++ {
+   //
+}
+```
+
+### Shorthand Name
+
+Shorthand names are recommended when possible as long as they are easy to understand by anyone reading the code for the first time. The wider the scope of use is, the more it needs to be descriptive.
+
+```
+pid // Bad (does it refer to podID or personID or productID?)
+spec // good (refers to Specification)
+addr // good (refers to Address)
+```
+
+### unique names
+
+keep in their original form:
+
+```
+userID instead of userId
+productAPI instead of productApi
+```
+
+
+###
+
 ### Commands
 
 - __go build__: build target package. this depends on the package you try to build. if main package, it build the whole app and generate an executable. if non-main package (e.g., service package), it builds the non-main package, and then discard built file.
