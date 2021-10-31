@@ -51,6 +51,15 @@ var <variable_name> SomeType // this declare variable and initialize SomeType (c
 var <pointer_name> *SomeType // this declare a pointer to SomeType but it is not assigned yet so hold 'nil'
 ```
 
+### tuple assignment
+
+assign multiple variables at once in a single line
+
+```
+// swaping two variable
+x, y = y, x
+```
+
 ### function
 
 - can return any number of values
@@ -281,6 +290,13 @@ func XXX(mySlice []int) // pass by value of a slice if you don't need to modofy 
 ```
 
 ##### escape analysis (golang feature)
+
+- if a variable is still *reachable*, the variable __escapes__ from the function and it is stored in the heap.
+
+- __reachable__: a variable is if still access from the program. e.g., returning a variable from a function or assigning a pointer of a local variable to a global variable. in this case, the variable is still reachable from the program.
+
+- does not matter if a variable holds primitive or object (created with 'new') for Go to decide the variable should be escaped or not. for example, an object will stay in the stack if the variable becomes unreachable when the function is closed. __The idea that all objects goes into the heap is wrong in Go__.  
+
 - in C/C++, you can't return a pointer from a function. 
 - this is because those variables are stored in stack and if the function return the pointer and done, the function including those variables are deleted once the function is done. 
 - in golang, you can return the pointer from a function because of this escape analysis.
