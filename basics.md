@@ -194,7 +194,33 @@ ref: https://medium.com/@meeusdylan/when-to-use-pointers-in-go-44c15fe04eac
 
 ### __struct__: 
 
-a collection of fields
+a collection of fields.
+
+you can use comparable operator directly to structs if data type of all of the fields are comparable.
+
+#### struct embedding and anonymous fields
+
+embed a struct into another. when using struct embedding, you can omit the inner struct name when accessing fields in the inner struct. 
+
+```
+type Point struct {
+	X, Y int
+}
+
+type Circle struct {
+	Point // <- struct embedding
+	radius int
+}
+
+var c Circle
+c.X // you don't need to write c.Point.X (but you could write this though)
+```
+
+but when you need to instantiate the struct, you need to follow the hierarchy of the struct
+
+```
+c = Circle{Point{X: 1, Y: 2}, 3} // you have to write like this.
+```
 
 ### __struct pointer__: 
 
@@ -389,6 +415,15 @@ v.Scale(2) // v.X = 6 and v.Y = 6
 // without pointer receivers (receiver argument) like '(v Vertex)', it just pass the copy of properties
 // and above code (Scale(2)) does not affect properties of v (v.X = 3, and v.Y = 3)
 ```
+
+### maps
+
+in Go, map = hash map.
+
+CRUD operation with the map is constant time on the average.
+
+the key value type must be comparable but never use 'float' type. this is because 'float' might produce 'NaN' beause of a dubious operation (e.g., divided by 0, ...). and this always results in 'false' when comparison. that's why you should avoid using the 'float'.
+
 
 ### class
 
