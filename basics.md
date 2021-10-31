@@ -226,13 +226,22 @@ __if you need to modify the struct in a called (inner) function, you need to pas
 - usually you should use slice rather than array (since array is inflexibile (fixed length))
 - The in-memory representation of [4]int is just four integer values laid out sequentially:
     
+- if a type of an array's element is comparable, the array itself is also comparable so that you can use comparable operators (e.g., ==, <=, >=) when comparing the array.
+
+```
+a := [2]int{1, 1}
+b := [...]int{1, 1} // ... is used when you want to delegate the length later 
+
+a == b // true
+```
+    
 ### slice: 
 - (partial view of array) does not store any data, it just describes a section of an underlying array.
 - a descriptor of an array segment. It consists of a pointer to the array, the length of the segment, and its capacity (the maximum length of the segment).
 
 ```
 type SliceHeader struct {
-      Data unitptr // a pointer to the backing array
+      Data unitptr // a pointer to the backing array (esp the starting element of the array)
       Len int // length
       Cap int // capacity
 }
@@ -264,8 +273,16 @@ s = s[2:] // cap = 3
 
 - extend: you can extend a slice based on the underly array if there is suffient capacity
 - make(): create slice with all nil element with specified size (dynamically-sized arrays).
+
+
 - append(): slice can be appended with values
-- if underlying array is too small to append the values, Go automatically re-size the underlying array.
+
+if underlying array is too small to append the values, Go automatically re-size the underlying array.
+
+
+the detailed logic is here. if the underlying array is too small to append a new element, it creates a double size of a new array and return a slice of the double-sized array to the client.
+
+
 ```
 ex)
 a = make([]int, 5) // a is a slice hold 5 'nil' elements
@@ -277,8 +294,13 @@ ref (official docs): https://go.dev/blog/slices-intro
 - when you want to pass the array as argument, use slice instead of passing the pointer to the array
 - this is because any change to the slice also affect to the original array
 - so you don't need to pass the pointer to the array as argument.
+- you can simply send a variable of the slice, if you need to modify the backing array inside the called function. 
 
-- ALSO, when you pass the slice as argument, it pass a copy of slice (its content) so if you need to modify the slice inside the called function, you need to either return the updated slice and assign at the calling function or pass a pointer to the slice.
+```
+a := [...]int{1, 2, 3, 4, 5} // backing array
+yourFunc(a[:]) // create a slice and send it as argument.
+// you can edit the backing array inside 'yourFunc' since the slice contains a pointer to the starting element, len(), cap()
+```
 
 - it is possible to modify the backing array when you pass the value of slice to a paramter in a function. 
 
@@ -288,6 +310,8 @@ func XXX(mySlice []int) // pass by value of a slice if you don't need to modofy 
 
 * in both cases,  it still possible to modify the underline array.
 ```
+
+- slices are not comparable.
 
 ##### escape analysis (golang feature)
 
