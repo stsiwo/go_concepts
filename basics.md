@@ -523,6 +523,10 @@ typically panic causes:
 - run all of 'deferred' function in the Goroutine
 - the program crashes
 
+### recovery
+
+
+
 ### unit testing
 
 #### testify
