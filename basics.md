@@ -513,6 +513,16 @@ __don't use a poiner to interface__. pointers to interfaces are almost never use
 should store pointers to struct in interface in order to modify the struct itself (e.g., a = &X{}); you can't modify the struct if you store the struct in interface (e.g., a = X{}) __when you pass by values__.
 
 
+### panic
+
+Go uses 'panic' instead of 'exception'.
+
+typically panic causes:
+
+- stop the normal execution
+- run all of 'deferred' function in the Goroutine
+- the program crashes
+
 ### unit testing
 
 #### testify
