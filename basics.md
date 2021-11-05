@@ -705,6 +705,14 @@ __if any method of a type has a pointer receiver, all of methods of the type sho
 
 __Why?__: this is becasue if a type has value receiver functions and ponter receiver functions, you need to switch value and pointer variables to access to the corresponding functions. this is too inefficient. 
 
+__However__, Go has a feature to treat a value variable (e.g., struct in this case) as a pointer variable implicitly when you access to fields or elements. here are conditions:
+
+1. the value variable must hold struct object vlaue or array/slice
+
+Also, it works vice vasa (e.g., treat a pointer variable as a value variable). I tested go version 1.17.2.
+
+but i guees still follow the convension to avoid any confusion when defining a struct and its receiver functions
+
 ```
 type MyStrings string[]
 
@@ -724,6 +732,11 @@ func (m MyStrings) myMethod3() { // <- breaking the convension. should be a poin
 
 valueVar := MyType{} // valueVar can use 'myMethod3' but not 'myMethod1' and 'myMethod2'
 pointerVar := &valueVar // pointerVar can use 'myMethod1' and 'myMethod2' but not 'myMehtod3'
+
+// surprisingly, Go has a feature which allows us to treat value variables as pointer variables (also, vice versa), so the below also works fine
+valueVar.myMethod1()
+pointerVar.myMethod3()
+
 ```
 
 ### Shorter variable names (Unwritten Rule)
