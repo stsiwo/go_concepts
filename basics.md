@@ -711,6 +711,16 @@ defer func() {
     
 ### concurrency
 
+#### communicating sequential processing (CSP)
+
+a model how diffferent goroutine communicate each other (sending/receiving data)
+
+#### shared memory multithreading
+
+a traditional model how different threads communicate each other.
+
+this model is commonly used in mainstream programming language.
+
 #### goroutine (GR): lightweight version of OS thread allows us to write concurrent program
 
 - main() generate 'main goroutine" 
@@ -750,6 +760,8 @@ defer func() {
   ex)
     |receiver| <- |channel (buffer=4)| <- |sender|
     channel <-data (4 times) // this will block here until another GR receive; make channel empty
+
+- closing: if a channel is closed, you cannot send a message any more and if you try, it will panic.
 
 #### mutex: guarantee only single GR access to shared resource at a time 
   
