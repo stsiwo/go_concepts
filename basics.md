@@ -523,9 +523,25 @@ typically panic causes:
 - run all of 'deferred' function in the Goroutine
 - the program crashes
 
+#### gracefully exit
+
+this means that the program __does not panic__ (e.g., does not show the error message and stack trace)
+
 ### recovery
 
+only used inside 'deferred function' otherwise, it just return 'nil'.
 
+used to regains control of a panicking goroutine. (e.g., a call to recover will capture the value given to panic and resume normal execution.)
+
+```
+// template to handle a panic gracefully with 'recovery' function
+defer func() {
+	if r := recover(); r != nil {
+		fmt.Println("caught error message: ", r)
+	}
+}()
+
+```
 
 ### unit testing
 
