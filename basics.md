@@ -198,6 +198,24 @@ a collection of fields.
 
 you can use comparable operator directly to structs if data type of all of the fields are comparable.
 
+#### initialization
+
+- __new keyword__:  
+
+allocate zeroed storage and return a pointer to it.
+
+```
+myType := new(MyType) // return a pointer
+```
+
+- __with struct (w/o new keyword)__:
+
+can initialize with parameters and return struct object itself (not pointer)
+
+```
+myType := MyType{X: 1, Y: 2}
+```
+
 #### struct embedding and anonymous fields
 
 embed a struct into another. when using struct embedding, you can omit the inner struct name when accessing fields in the inner struct. 
@@ -394,7 +412,7 @@ var test1 = adder() // same. a new closure is created for test1 variable and it 
 type Vertex struct {
   X, Y float64
 }
-func (v Vertex) abs() float64 { // (v Vertex): receiver argument
+func (v Vertex) abs() float64 { // (v Vertex): receiver argument and the variable name should be the first letter of the type
   return math.Sqrt(v.X*v.X + v.Y*v.Y) // can use v as belonged type
 }
 v = Vertex{3, 4}
@@ -681,6 +699,32 @@ Methodname + er = InterfaceName
 
 e.g., Reader, Writer, Formatter, CloseNotifier
 
+### Pointer Receiver
+
+__if any method of a type has a pointer receiver, all of methods of the type should has a pointer receiver even if one of them does not really need it them.__
+
+__Why?__: this is becasue if a type has value receiver functions and ponter receiver functions, you need to switch value and pointer variables to access to the corresponding functions. this is too inefficient. 
+
+```
+type MyStrings string[]
+
+func (m *MyStrings) myMethod1() {
+	...
+}
+
+func (m *MyStrings) myMethod2() {
+	...
+}
+
+func (m MyStrings) myMethod3() { // <- breaking the convension. should be a pointer receiver (e.g., (m *MyStrings))
+	...
+}
+
+// you end up that you have to create a value and pointer variable to access its methods
+
+valueVar := new 
+```
+
 ### Shorter variable names (Unwritten Rule)
 
 ### single-letter identifier
@@ -713,10 +757,7 @@ userID instead of userId
 productAPI instead of productApi
 ```
 
-
-###
-
-### Commands
+## Commands
 
 - __go build__: build target package. this depends on the package you try to build. if main package, it build the whole app and generate an executable. if non-main package (e.g., service package), it builds the non-main package, and then discard built file.
 
@@ -724,7 +765,7 @@ productAPI instead of productApi
 
 - __go install__: recommended way to build and install packages in module mode.
 
-#### Module Commands
+### Module Commands
 
 - __go mod vendor__: copies of all packages needed to support builds and tests of packages in the main module in the /vendor folder.
 - __go mod init <main_module_name>__: init go.mod 
@@ -734,7 +775,7 @@ productAPI instead of productApi
 - __go doc <package_name>[@vx.x.x]__:  check docs for specific package
 - __go run <main_go>__:  compile and execute app
 
-#### Testing
+### Testing
 
 - __go test -run TestSuite ./test/functional/users/ -v -count 1 -testify.m TestUserUpdatePutEndpointShouldUpdateDataExceptPasswordSuccessfully__: run a single test case in a test suite.
 
