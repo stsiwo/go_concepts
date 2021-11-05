@@ -722,7 +722,8 @@ func (m MyStrings) myMethod3() { // <- breaking the convension. should be a poin
 
 // you end up that you have to create a value and pointer variable to access its methods
 
-valueVar := new 
+valueVar := MyType{} // valueVar can use 'myMethod3' but not 'myMethod1' and 'myMethod2'
+pointerVar := &valueVar // pointerVar can use 'myMethod1' and 'myMethod2' but not 'myMehtod3'
 ```
 
 ### Shorter variable names (Unwritten Rule)
