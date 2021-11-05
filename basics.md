@@ -536,6 +536,7 @@ used to regains control of a panicking goroutine. (e.g., a call to recover will 
 ```
 // template to handle a panic gracefully with 'recovery' function
 defer func() {
+	// recover() receive the panic and this is where you can handle the panic (e.g., get it back to the normal flow) gracefully
 	if r := recover(); r != nil {
 		fmt.Println("caught error message: ", r)
 	}
