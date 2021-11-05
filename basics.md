@@ -43,6 +43,8 @@ type A struct {
 A.id <- NO (you can't do that) // in order to access, you need to use capital (e.g., Id) or provide getter method with capital (e.g., GetId)
 ```
 
+if you want a variable to be available publicly but not allow them to modify (read-only), you need to create a struct which has only one field so that that struct is publicly available but they cannot access to the field. 
+
 ### variable declaration and initialization
 
 code)
@@ -434,6 +436,59 @@ v.Scale(2) // v.X = 6 and v.Y = 6
 // and above code (Scale(2)) does not affect properties of v (v.X = 3, and v.Y = 3)
 ```
 
+### method expression & method value
+
+__reviews__: 
+
+a __statement__ includes expression. e.g., 'if' statement, assignment statement. instructions to tell the program what to do. a single logical group.
+
+```
+if (xxx) { ... } // if statement
+
+var val = <operator> // assignment statement
+```
+
+a __expression__ includes identifiers, literals, and/or operators (e.g., return 1, map(xxx)). this does not include '='. usually right side of '='.
+
+__method value__: a function that binds a method to a receiver value.
+
+you can separate a selection and its call.
+
+- __selection__: assign a method value to a variable 
+- __call__: call the variable with necessary arguments
+
+```
+type A struct {}
+
+func (a *A) myMethod1(x int) { ... }
+
+a := A{}
+b := a.myMethod1 // 'b' holds the method value (e.g., selection)
+
+b(3) // actual function call with method value (e.g., call)
+```
+
+usually method values are useful when you want to call the function on different receiver.
+
+also, you can create a method value from a static struct (i don't know the correct term, but i know you understand what i mean)
+
+```
+type Point struct {
+	X, Y int
+}
+
+func (p Point) Distance(q Point) int {
+	return xxx // calc the distance of two point (p and q) and return it
+}
+
+noReciverVar := Point.Distance // assign static method value to a variable called 'noreceiverVar
+
+pA := Point{X:1, Y:2}
+pB := Point{X:3, Y:3}
+
+noReceiverVar(pA, pB) // pA is for value receiver of 'Distance (e.g., p) and pB is for the argument of 'Distance' (e.g., q)
+```
+
 ### maps
 
 in Go, map = hash map.
@@ -530,6 +585,80 @@ __don't use a poiner to interface__. pointers to interfaces are almost never use
 
 should store pointers to struct in interface in order to modify the struct itself (e.g., a = &X{}); you can't modify the struct if you store the struct in interface (e.g., a = X{}) __when you pass by values__.
 
+#### type switch 
+
+a switch statement for type
+
+```
+syntax
+
+switch x.(type) {
+	bool: ...
+	int: ...
+	...
+	default: ...
+}
+```
+
+#### interface values
+
+an variable which hold a value of an interface type.
+
+it consists of two components, a concrete type and a value of the type
+
+```
+var writer io.Writer // currently type is nil and its value is also nil ... (1)
+
+writer = xxx (some code to return an instance of *bytes.Buffer) // type: *bytes.Buffer and the value is the value of *bytes.Buffer ... (2)
+```
+
+an interface value use its type when comparing it with nil (e.g., writer != nil), so this results with the following based on the above number (e.g., (1) and (2)):
+
+- (1) nil
+- (2) not nil
+
+Also, when you send a concrete type as argument to a function which accepts its interface value, this might results in a confusion.
+
+in the below case, 'out' variable's type is 'os.File' so 'out' == nil is false.
+
+```
+// assuming you want 'buf' to hold nothing (e.g., nil)
+
+var buf *os.File // concrete type 
+f(buf)
+
+func f(out io.Writer) {
+	if out != nil { // NOTE: out is not nil 
+		fmt.Printf("buffer is not nil: %s", out)
+	} else {
+		fmt.Printf("buffer is nil: %s", out)
+	}
+}
+
+// if you want this to be true, you need to write like this:
+var buf io.Writer // interface type 
+f(buf)
+
+func f(out io.Writer) {
+	if out != nil { // NOTE: out is not nil 
+		fmt.Printf("buffer is not nil: %s", out)
+	} else {
+		fmt.Printf("buffer is nil: %s", out)
+	}
+}
+
+
+```
+
+#### interface with nil issue (tricky)
+
+in some cases, interface variables (a.k.a., interface values) might result in not nil even if the vriables does not hold any value.
+
+this is because 
+
+#### interface design rules
+
+- create an interface as small as possible based on a single logic. don't mix up with different logic together. (Interface Segragation Principle of SOLID principles). don't create an interface based on the domain knowledge but feature (e.g., write/read operation)
 
 ### panic
 
