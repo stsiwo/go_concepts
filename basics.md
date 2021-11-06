@@ -406,6 +406,33 @@ var test = adder() // a close is created for test varaible, this means test vari
 var test1 = adder() // same. a new closure is created for test1 variable and it gets own sum variable (=0)
 ```
 
+#### closure trap (tricky)
+
+this happens inside a loop with goroutines/callbacks.
+
+index variable (e.g., i) in a loop statement always refers to the last value rather than keeping the each index value (e.g., 0, 1, 2, 3, ...)
+
+```
+func main() {
+    done := make(chan bool)
+
+    values := []string{"a", "b", "c"}
+    for _, v := range values {
+        go func() {
+            fmt.Println(v)
+            done <- true
+        }()
+    }
+
+    // wait for all goroutines to complete before exiting
+    for _ = range values {
+        <-done
+    }
+}
+```
+
+more detail and solution are [here](https://golang.org/doc/faq#closures_and_goroutines)
+
 ### method: function with a special receiver argument
 
 - __receiver argument__: allows to connect a function to a type
@@ -751,10 +778,6 @@ this model is commonly used in mainstream programming language.
 - only two GRs (not multiple (>2) GRs)
 - receiveing always block until channel gets data from another GR (regardless of buffer or non-buffer)
 - unbuffered channel:
-  - sending (c <-data) will be blocked until receivng (data := <-c) 
-  ex)
-    |receiver| <- |channel| <- |sender|
-    channel <- data // sending will be blocked until another GR receive (non-buffered)
 - buffered channel:
   - sending (c <-data) will be blocked when buffer is full
   ex)
@@ -763,7 +786,152 @@ this model is commonly used in mainstream programming language.
 
 - closing: if a channel is closed, you cannot send a message any more and if you try, it will panic.
 
-#### mutex: guarantee only single GR access to shared resource at a time 
+##### pipeline
+
+a series of stages connected by channels, where each stage is a group of goroutines running the same function.
+
+| first stage | --- multiple inbound/outbound channels --- | 2nd stage | --- multiple inbound/outbound channels --- | 3rd stage | ... | the last stage |
+
+__fan out__: 
+
+__fan in__: 
+
+##### buffered channels
+
+- sending (c <-data) will be blocked when buffer is full
+
+```
+|receiver| <- |channel (buffer=4)| <- |sender|
+
+channel <-data (4 times) // this will block here until another GR receive; make channel empty
+```
+
+##### unbuffered channels
+
+- sending and receiving are __synchronized__ (e.g., the upstream goroutine will be blocked until the downstream one receives)
+
+- sending (c <-data) will be blocked until receivng (data := <-c) 
+
+```
+|receiver| <- |channel| <- |sender|
+channel <- data // sending will be blocked until another GR receive (non-buffered)
+```
+
+##### sync.WaitGroup
+
+used when you want to make sure all goroutines launched are done. also, when you want to make sure sending to a channel is done before calling close. 
+
+how it works)
+
+```
+func main() {
+
+	// 1. initialize 
+    var wg sync.WaitGroup
+
+    for i := 1; i <= 5; i++ {
+        
+	// 2. increment value for every goroutine launched
+	wg.Add(1)
+
+	// avoid the closure trap
+        i := i
+
+        go func() {
+		// make sure to call 'wg.Done()' if the task is done on each goroutine
+            defer wg.Done()
+            worker(i)
+        }()
+    }
+
+	// this waits until all goroutines launched are done
+    wg.Wait()
+}
+```
+#### Race Condition
+
+it occures when multiple GRs access the same data.
+
+since OS thread scheduling algorithm swap the active thread any time, there is no way for you can guaranteen the order of which thread access first. 
+
+solution: you need to use locking the resource.
+
+detail: [here](https://stackoverflow.com/questions/34510/what-is-a-race-condition)
+
+#### Data Race
+
+occurs when one thread accesses a mutable object while another thread is writing to it.
+
+solutions:
+
+1. make the shared data read-only
+2. use channels (don't communicate by sharing memory. share memory by communicating)
+3. mutual exclusion (only one GR access the shared data at a time)
+
+#### semaphore 
+
+A semaphore controls access to a shared resource through the use of a counter. If the counter is greater than zero, then access is allowed. If it is zero, then access is denied. What the counter is counting are permits that allow access to the shared resource. Thus, to access the resource, a thread must be granted a permit from the semaphore.
+
+#### mutex (mutual exclusion): guarantee only single GR access to shared resource at a time 
+  
+- __Mutex__: normal mutex locking
+
+only a single GR acquires a lock and the others cannot access unless the 1st GR release the lock
+
+- __RWMutex__: read/write mutex locking
+
+either multiple readers or a single writer
+
+#### race detector 
+
+Go has built-in flag to detect any concurrency mistake you made. 
+
+use '-race' flag when build or test command
+
+#### Goroutine vs Thread
+
+__threads__:
+
+- fix size of memory (e.g., 2MB)
+- context switching is slow (switch from active thread to another thread is relative expensive like save/restore data in memory)
+- has an identity for each thread (e.g., so that it can has its own thread local storage)
+
+__Groutines__:
+
+- flexible size of memory (e.g., starting 2KB and expand or shrink as needed)
+- M:N scheduling is faster than the OS context switching
+- does not have an identity 
+
+
+##### M:N scheduling
+
+Go has iwo own schduler that map M (Goroutines) to N (OS threads).
+
+you can think of the Go scheduler in a Go program as OS scheduler on the OS
+
+Go scheduler is invoked by certain Go language constructs (e.g., Sleep, blocks, mutex stuff). so, Goroutine switching is invoked only when needed.
+
+the OS scheduler is invoked periodically.
+  
+Go scheduler is much cheaper than the OS scheuler
+
+__GOMAXPROCS__: to check how many OS threads are actively running the Go code simulateneously.
+  
+### Benchmark
+
+check performance of your program with fixed workload.
+
+
+### Profiling
+
+identify any bottleneck of performace issue of your program automatically. 
+
+Go support the following profiling:
+
+- CPU profile: 
+- heap profile:
+- blocking profile:
+  
   
 ### Memory Management
   # Memstats properties:
