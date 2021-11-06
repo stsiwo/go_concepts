@@ -848,6 +848,23 @@ func main() {
     wg.Wait()
 }
 ```
+
+#### Explict Cancellation
+
+how a GR in the downstream tell a GR in the upstream to stop any incoming message anymore?
+
+__solution__: create a channel on the downstream and share it with all GR (e.g., upstream GRs)
+
+#### Unidirectional channel
+
+receive-only/send-only channels (e.g., separate the two responsibilities)
+
+#### Goroutine leak
+
+goroutine stuck because of waiting for sending or receiving message via a channel forever. thsi results in that the GR is not GCed.
+
+__solution__: make sure all GRs are terminated themselves when no longer needed.
+
 #### Race Condition
 
 it occures when multiple GRs access the same data.
