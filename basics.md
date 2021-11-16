@@ -45,6 +45,12 @@ A.id <- NO (you can't do that) // in order to access, you need to use capital (e
 
 if you want a variable to be available publicly but not allow them to modify (read-only), you need to create a struct which has only one field so that that struct is publicly available but they cannot access to the field. 
 
+### init function
+
+only called once regardless of how many times the package (e.g., file) is imported.
+
+Is it good for declaring global variables? here is [a good reference](https://stackoverflow.com/questions/56039154/is-it-really-bad-to-use-init-in-go). it says that you should not overuse the 'init' function because of the side effect (e.g., bad readability). Also, it is always called when importing so you cannot control where to call. And, it is hard to customize the global variables in it so it is bad for testing.
+
 ### variable declaration and initialization
 
 code)
