@@ -724,6 +724,27 @@ defer func() {
 
 ```
 
+### contexts package
+
+one of the most important concept of Go's ecosystem. you can share data with a scope (e.g., application (a.k.a., global) scope, Goroutine (such as http request) scope).
+
+__using contexts__, you can isolate shared data based on the request so that each request does not mix up with others. 
+
+use cases:
+
+1. share data 
+2. create values of a API request scope
+
+```
+func FuncA(ctx context.Context) {
+	ctx.addValue("key", "value")
+}
+
+func FuncB(ctx context.Context) {
+	ctx.getValue("key") // you can get the value
+}
+```
+
 ### unit testing
 
 #### testify
