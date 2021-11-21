@@ -734,7 +734,7 @@ use cases:
 
 1. share data 
 2. create values of a API request scope
-3. this allows you to do cancellation/timeout with [sql package](https://pkg.go.dev/database/sql)
+3. this allows you to do cancellation/timeout with [sql package](https://pkg.go.dev/database/sql). see [this](https://www.jajaldoang.com/post/sql-query-timeout-with-golang-context/)
 
 ```
 func FuncA(ctx context.Context) {
