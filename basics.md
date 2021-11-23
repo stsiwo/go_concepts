@@ -19,6 +19,39 @@ ref: https://golang.org/ref/mod#vendoring
              
 ## syntax
 
+### type
+
+#### type definition
+
+create a new type from a source type.
+
+```
+syntax)
+type NewType SourceType
+
+ex)
+type MyInt int
+```
+
+caveats:
+
+1. a new type share the same underlying type with the source type, BUT you cannot inherit fields/methods from the source type since Go does not have inheritance. if you need to use the underlying methods/fields you need to use composition.
+
+```
+type NewType SourceType
+
+newTypeVar.SourceMthod() // <- not work!!
+```
+
+
+#### type alias
+
+it has the same result as type definition.
+
+```
+type NewType = SourceType
+```
+
 ### package = directory
 
 - executable package
@@ -618,21 +651,6 @@ __don't use a poiner to interface__. pointers to interfaces are almost never use
 
 should store pointers to struct in interface in order to modify the struct itself (e.g., a = &X{}); you can't modify the struct if you store the struct in interface (e.g., a = X{}) __when you pass by values__.
 
-#### type switch 
-
-a switch statement for type
-
-```
-syntax
-
-switch x.(type) {
-	bool: ...
-	int: ...
-	...
-	default: ...
-}
-```
-
 #### interface values
 
 an variable which hold a value of an interface type.
@@ -687,11 +705,35 @@ func f(out io.Writer) {
 
 in some cases, interface variables (a.k.a., interface values) might result in not nil even if the vriables does not hold any value.
 
-this is because 
+this is because an interface variable consists of two comonents:
+
+1. a type
+2. its value
+
+even if the value is nil, the interface variable does not necessarily nil since if the interface type is already defined.
+
+see textbook for more detail.
 
 #### interface design rules
 
 - create an interface as small as possible based on a single logic. don't mix up with different logic together. (Interface Segragation Principle of SOLID principles). don't create an interface based on the domain knowledge but feature (e.g., write/read operation)
+
+### type switch 
+
+a switch statement for type
+
+```
+syntax
+
+switch x.(type) {
+	bool: ...
+	int: ...
+	...
+	default: ...
+}
+```
+
+
 
 ### panic
 
