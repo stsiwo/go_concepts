@@ -320,7 +320,7 @@ b := [...]int{1, 1} // ... is used when you want to delegate the length later
 a == b // true
 ```
     
-### slice: 
+### slices: 
 - (partial view of array) does not store any data, it just describes a section of an underlying array.
 - a descriptor of an array segment. It consists of a pointer to the array, the length of the segment, and its capacity (the maximum length of the segment).
 
@@ -397,6 +397,21 @@ func XXX(mySlice []int) // pass by value of a slice if you don't need to modofy 
 ```
 
 - slices are not comparable.
+
+- **a slice of pointers to structs vs a slice of strucsts**: 
+
+which one is better or should use?
+
+```
+var pointerSlices []*MyStruct // slice is a copy and each element is a pointer when you send it as argument in a function. but the slice itself includes a pointer to the 1st element so don't need to use this??
+var structSlices []MyStruct // slice is a copy and each element is also a copy of the struct when you send it as arugment in a function.
+```
+
+this [ref](https://stackoverflow.com/questions/27622083/slices-of-structs-vs-slices-of-pointers-to-structs) said that a slice of structs is much faster and less memory usage than a slice of pointers to structs.
+
+
+
+
 
 ##### escape analysis (golang feature)
 
