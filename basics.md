@@ -435,7 +435,24 @@ this [ref](https://stackoverflow.com/questions/27622083/slices-of-structs-vs-sli
   - therefore, it might affect performance. 
   - the best choice is not to use those variables as much as possible.
         - conclusion: avoid to return pointer from function as much as possible
-    
+
+- for primitive data type (e.g., string, int) you can return its copy (e.g., pass by value) so that it does not allocate it in heap, and it only stay in the stack.
+
+```
+func myFunc() int {
+	return 30 // only stay in the stack
+}
+
+func myFunc() *int {
+	answer := 30
+	return &answer // Go does escape analysis and allocate it in the heap
+}
+
+
+```
+
+ref: [primitive and escape analysis](https://mayurwadekar2.medium.com/escape-analysis-in-golang-ee40a1c064c1)
+   
 ```
 // option 1) create variable at top level function and send it by a pointer and you can mutate inside called function. then, you don't need to return the pointer to the calling function.
 
