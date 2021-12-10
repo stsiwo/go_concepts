@@ -29,3 +29,51 @@ this is because Go internally run 'go mod tidy' to remove unnecessary dependenci
 
 reference [here](https://github.com/99designs/gqlgen/issues/1483)
         
+### Usage of 'defer' 
+
+use 'defer' with care when you abstract the logic to another function. 
+
+the defer is called when the surrounding function is closed so the refactoring like below does not work.
+
+```
+
+func Test() {
+        
+        // run test server
+	ts := httptest.NewServer(router)
+        defer ts.Close()
+        
+        ...
+
+} 
+
+=> refactor
+
+
+func Test() {
+        
+        ts := SetupServer()
+
+}
+
+func SetupServer() *TS {
+
+        ts := httptest.NewServer(router)
+        defer ts.Close() // ts is closed when this 'SetupServer' is done so when 'Test' function, it is already closed.
+        
+        return ts
+}
+
+=> solution
+
+func Test() {
+
+        ts := SetupServer()
+        defer ts.Close() // bring the defer here
+        
+}
+
+```
+
+
+
