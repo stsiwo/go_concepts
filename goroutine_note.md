@@ -200,6 +200,27 @@ __GOMAXPROCS__: to check how many OS threads are actively running the Go code si
   
 ## practical stuff
 
+### send a channel as arugment 
+
+there are 2 types to enforce type error for channel when sending it as argument: 
+
+```
+func send(ch chan<- []byte) { 
+
+	... <- ch // compiler error
+	ch <- data // ok
+
+} // this only allows 'ch' to sending. if you do receiving with this ch, it generate compiler error
+
+func receive(ch <-chan []byte) { 
+
+	... <- ch // ok
+	ch <- data // compiler error
+
+} // this only allows 'ch' to receiving. if you do sending with this ch, it generate compiler error
+
+```
+
 ### don't use multiple unbufferred channels consequently
 
 ```
