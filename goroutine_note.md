@@ -221,6 +221,8 @@ func receive(ch <-chan []byte) {
 
 ```
 
+ref: https://golangbyexample.com/channel-function-argument-go/
+
 ### don't use multiple unbufferred channels consequently
 
 ```
