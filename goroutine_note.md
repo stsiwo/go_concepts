@@ -12,7 +12,20 @@ a traditional model how different threads communicate each other.
 
 this model is commonly used in mainstream programming language.
 
+## options
+
+in Go, you can achieve concurrency with the following techniques:
+
+1. channel
+2. mutex (mutual exclusive) locking
+3. immutable data structure
+4. Data protected by confinement; use non-concurrently coding and manage the concurrent situation to avoid the usage of concurrent code at all. this might be hard to achieve.
+
 ### goroutine (GR): lightweight version of OS thread allows us to write concurrent program
+
+1. GR is not garbage collected by the runtime so make sure you clean up all GRs you generated.
+
+use can use cancelation (e.g., 'done' channel) and share it with other goroutines. if you want to stop the program, you can use the 'done' channel to stop other goroutines too.
 
 - main() generate 'main goroutine" 
   - if you start another GR inside main(), it does not start immediately.
@@ -261,5 +274,21 @@ for i := 0; i < 2; i++ {
 }
 
 ...
+
+```
+
+### for-select pattern
+
+this is useful when using channel.  Looping infinitely waiting to be stopped.
+
+```
+for {
+	select {
+	case s := <- channel:
+		// do something with received data from the channel and continue
+	case <- done: // if done channel receives data, done this for loop.
+		return 
+	}
+}
 
 ```
