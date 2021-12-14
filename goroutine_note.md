@@ -62,6 +62,7 @@ use can use cancelation (e.g., 'done' channel) and share it with other goroutine
     channel <-data (4 times) // this will block here until another GR receive; make channel empty
 
 - closing: if a channel is closed, you cannot send a message any more and if you try, it will panic.
+- it is not mandatory to close channels since it is GCed. but it is useful to tell to receivers that senders sent all data so no more data by close the channel. reference: https://stackoverflow.com/questions/8593645/is-it-ok-to-leave-a-channel-open
 
 ### pipeline
 
@@ -69,9 +70,139 @@ a series of stages connected by channels, where each stage is a group of gorouti
 
 | first stage | --- multiple inbound/outbound channels --- | 2nd stage | --- multiple inbound/outbound channels --- | 3rd stage | ... | the last stage |
 
-__fan out__: 
+this is a another way to form abstraction esp in communication btw GRs.
 
-__fan in__: 
+benefits:
+
+1. you can combine each stage as you like and create your own pipeliine to accommodate your requirement.
+2. each stage executes its task concurently; this means each stage just wait for the input and be able to produce out independently. (a.k.a., ramification; devide tasks into smaller one and each GR is in charge of each task)
+
+```
+
+main GR 
+	-> stage 1
+	-> stage 2 // wait for stage 1 sends out its data to me
+	-> stage 3 // wait for stage 2 sends out its data to me
+
+```
+
+implementation:
+
+```
+// best practice for constructing pipline
+
+// overview
+
+| Main GR | => | Generator | => | stage 2 | => | stage 3 | => ... => | Main GR |
+
+// sample code
+
+generator := func(done <-chan interface{}, integers ...int) <-chan int {
+    intStream := make(chan int)
+    go func() {
+        defer close(intStream)
+        for _, i := range integers {
+            select {
+            case <-done:
+                return
+            case intStream <- i:
+            }
+        }
+    }()
+    return intStream
+}
+
+multiply := func(
+  done <-chan interface{},
+  intStream <-chan int,
+  multiplier int,
+) <-chan int {
+    multipliedStream := make(chan int)
+    go func() {
+        defer close(multipliedStream)
+        for i := range intStream {
+            select {
+            case <-done:
+                return
+            case multipliedStream <- i*multiplier:
+            }
+        }
+    }()
+    return multipliedStream
+}
+
+add := func(
+  done <-chan interface{},
+  intStream <-chan int,
+  additive int,
+) <-chan int {
+    addedStream := make(chan int)
+    go func() {
+        defer close(addedStream)
+        for i := range intStream {
+            select {
+            case <-done:
+                return
+            case addedStream <- i+additive:
+            }
+        }
+    }()
+    return addedStream
+}
+
+done := make(chan interface{})
+defer close(done)
+
+intStream := generator(done, 1, 2, 3, 4)
+pipeline := multiply(done, add(done, multiply(done, intStream, 2), 1), 2)
+
+for v := range pipeline {
+    fmt.Println(v)
+}
+
+```
+
+what if one of stage is computationally expensive? is this rate-limit our entire pipeline?
+
+the solution is that you can use [**fan-out**](#fan-out-fan-in) and **fan-in** pattern to tackle this issue:)
+
+### stages
+
+def) something which takes data in, perform transformation on it, and send the data to another stage.
+
+```
+// example of a stage
+
+// data in 
+multiply := func(values []int, multiplier int) []int {
+    multipliedValues := make([]int, len(values))
+    
+    // transform
+    for i, v := range values {
+        multipliedValues[i] = v * multiplier
+    }
+    
+    // send the data out
+    return multipliedValues
+}
+```
+
+each stage has its own responsibility (i.e.,, sepration of concerns)
+
+there are two type of what stages can perform: 
+
+1. batch processing: operate chunks of data all at once instead of one discrete value at a time (e.g., slices)
+2. stream processing: operate a single data at a time.
+
+#### Generator
+
+def) a stage which is usually the first one on a pipeliine to convert discrete values into a serie of values (e.g., slices) on a single channel
+
+### Fan-Out Fan-In 
+
+__fan out__: a process of starting multiple GRs to handle inputs from your pipeline
+
+__fan in__: a process of combineing multiple results into a single channel
 
 ### buffered channels
 
@@ -131,6 +262,31 @@ func main() {
 how a GR in the downstream tell a GR in the upstream to stop any incoming message anymore?
 
 __solution__: create a channel on the downstream and share it with all GR (e.g., upstream GRs)
+
+```
+// simple pattern to close GR without leaking. (a.k.a., Preventing Goroutine Leaks pattern)
+
+func main() {
+
+	done := make(chan interface{})
+	defer close(done) // this is important when this defer function is called, the child GR is also close since 'case <- done:' clause is called.
+	
+	go func() {
+	
+		for {
+		
+			select {
+			
+			case <- done: // when close the 'done' channel, this code is executed, which means that this child GR is closed automatically so that no GR leaks.
+				return 
+			case ...:
+				...
+			
+			}
+		}
+	}
+}
+```
 
 ### Unidirectional channel
 
@@ -291,4 +447,15 @@ for {
 	}
 }
 
+```
+
+### error handling
+
+main GR should take a control of what to do when any child GR produces errors. 
+
+so error handling (e.g., if err := ...) should be in main GR, and any child GR should return the error to the main GR. 
+
+create a struct where error embeds in and return the struct as a result of the child goroutine so that it looks like a usual synchronous function. 
+
+```
 ```
