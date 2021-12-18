@@ -61,8 +61,35 @@ use can use cancelation (e.g., 'done' channel) and share it with other goroutine
     |receiver| <- |channel (buffer=4)| <- |sender|
     channel <-data (4 times) // this will block here until another GR receive; make channel empty
 
-- closing: if a channel is closed, you cannot send a message any more and if you try, it will panic.
+- closing: if a channel is closed, you cannot **send** a message any more and if you try, it will panic.
+  - it is ok to receive values from closed channel. closing only affects sending (e.g., no more sending)
 - it is not mandatory to close channels since it is GCed. but it is useful to tell to receivers that senders sent all data so no more data by close the channel. reference: https://stackoverflow.com/questions/8593645/is-it-ok-to-leave-a-channel-open
+
+- **reange over channel**: you can use 'range' key for a channel.
+
+```
+
+for v := range channel {
+	// every time a data is sending to the channel, this body is executed.
+	// assuming that the channel is unbufferred.
+}
+
+
+// when the channel is closed, the for loop is done. this means that if you don't close the channel, it will ends up deadlock since 'range channel' block forever.
+```
+
+- **concatenation of receiving and sending**:
+
+```
+// use two arrows
+takeStream <- <- valueStream
+
+// = takeStream <- (<- valueStream)
+
+// 1. receiving a data from 'valueStream'
+// 2. sending the data to 'takeStream'
+
+```
 
 ### pipeline
 
@@ -459,3 +486,56 @@ create a struct where error embeds in and return the struct as a result of the c
 
 ```
 ```
+
+### or-done channel
+
+??
+
+### tee channel
+
+a stage which split values from a channel and separate them into two channels.
+
+it works like tee command in Linux (see [this](https://www.geeksforgeeks.org/tee-command-linux-example/)). for example, input sends to both a file and stdout.
+
+use this when you need to send values from a channel to two different channels. the same value is sent to both channels.
+
+```
+
+| channel A | --> | tee | -> | channel B |
+			  -> | channel C |
+
+```
+
+### bridge-channel
+
+convert a channel of channels to a channel. 
+
+- **a channel of channels**: a channel which contains a series of channel as data
+
+```
+channel 1 contains channel 1.a, 1.b, and 1.c
+---------------------------------------
+channel 1
+
+|-------------||-------------||-------------|
+| channel 1.a || channel 1.b || channel 1.c | 
+|    |A|      ||     |B|     ||     |C|     |
+|-------------||-------------||-------------|
+
+---------------------------------------
+
+==> convert into a simple channel
+
+---------------------------------------
+channel 2
+
+|-------------||-------------||-------------|
+|    |A|      ||     |B|     ||     |C|     |
+|-------------||-------------||-------------|
+
+---------------------------------------
+
+
+```
+
+convert a channel of channels to a channel 
