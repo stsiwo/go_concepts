@@ -538,4 +538,12 @@ channel 2
 
 ```
 
-convert a channel of channels to a channel 
+### queuing 
+
+accept work even if it is not ready yet.
+
+in channels, you can use buffered channels.
+
+**you should use queuing as the last resort** since Adding queuing prematurely can hide synchronization issues such as deadlocks and livelocks.
+
+common mistake is that queuing boosts performance. this is not true. **Queuing will almost never speed up the total runtime of your program; it will only allow the program to behave differently**.
