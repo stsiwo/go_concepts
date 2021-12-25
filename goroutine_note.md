@@ -1,6 +1,20 @@
 # goroutine
 
+## textbook
+
+https://www.oreilly.com/library/view/concurrency-in-go/9781491941294/ch04.html
+
 ##  basic
+
+### preemptable
+
+conditions which must be follow when
+
+### instantaneous 
+
+occurring or done in an instant or instantly.
+
+if your stage is done quickly rather than taking a certain time, it is called instantaneous.
 
 ### communicating sequential processing (CSP)
 
@@ -547,3 +561,56 @@ in channels, you can use buffered channels.
 **you should use queuing as the last resort** since Adding queuing prematurely can hide synchronization issues such as deadlocks and livelocks.
 
 common mistake is that queuing boosts performance. this is not true. **Queuing will almost never speed up the total runtime of your program; it will only allow the program to behave differently**.
+
+the main use case of queue is to **reduce blocking time of a stage (a.k.a., decoupling a stage from other stages) so that the stage keep available to accept a new job**.
+
+when to use queue to improve performance:
+
+1. If batching requests in a stage saves time.
+
+ex)
+
+chuncking: accumulate something until a certain amount and process those at once (e.g., input/output buffer: rather than processing every single bit/byte, use buffer to accumulate the input/output until enough to process. it is more efficient. 
+
+
+2. If delays in a stage produce a feedback loop into the system.
+
+- feebback loop (a.k.a., negative feedback loop, death spiral, downward spiral):
+
+If the efficiency of the pipeline drops below a certain critical threshold, the systems upstream from the pipeline begin increasing their inputs into the pipeline, which causes the pipeline to lose more efficiency, and the death-spiral begins. Without some sort of fail-safe, the system utilizing the pipeline will never recover.
+
+If the rate of ingress exceeds the rate of egress, your system is unstable and has entered a death-spiral.
+
+ex) 
+
+one of stage cannot handle input smoothly so the previous stage acceping more input and waiting for the stage handling the current job to send a new one from the previous stage.
+
+so queuing should be implemented either: 
+
+1. At the entrance to your pipeline.
+2. In stages where batching will lead to higher efficiency.
+
+you should not add queue where the stage handling an expensive computational task. Why?
+
+to understand this, you need to know how to calculate throughput of your pipeline.
+
+in order to do this, you need **Little's Law** 
+
+```
+Little's Law formula:
+
+L=λW where:
+
+L: the average number of units in the system.
+λ: the average arrival rate of units.
+W: the average time a unit spends in the system.
+```
+
+this equation only applies if the system is **stable**
+
+- **stable** system: the rate of input (a.k.a., **ingress**) and the rate of output (a.k.a., **egress**) is equal.
+- **unstable**: if the above condition does not apply. esp, 
+	- if ingress exceeds egress, it causes **death spiral (feedback loop)**.
+	- if egress exceeds ingress, you have not utilize your system completely in terms of efficiency).
+
+still don't understand how to use **Little's Law** in practice, you should see the textbook.
