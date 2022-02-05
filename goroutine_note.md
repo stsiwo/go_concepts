@@ -243,7 +243,52 @@ def) a stage which is usually the first one on a pipeliine to convert discrete v
 
 __fan out__: a process of starting multiple GRs to handle inputs from your pipeline
 
+- you can implement fan out with for loop
+
+```
+numFinders := runtime.NumCPU()
+finders := make([]<-chan int, numFinders)
+for i := 0; i < numFinders; i++ {
+    finders[i] = TargetStageToBeFannedOut(done, PreviousInputs)
+}
+```
+
 __fan in__: a process of combineing multiple results into a single channel
+
+```
+fanIn := func(
+    done <-chan interface{},
+    channels ...<-chan interface{},
+) <-chan interface{} { 1
+    var wg sync.WaitGroup 2
+    multiplexedStream := make(chan interface{})
+
+    multiplex := func(c <-chan interface{}) { 3
+        defer wg.Done()
+        for i := range c {
+            select {
+            case <-done:
+                return
+            case multiplexedStream <- i:
+            }
+        }
+    }
+
+    // Select from all the channels
+    wg.Add(len(channels)) 4
+    for _, c := range channels {
+        go multiplex(c)
+    }
+
+    // Wait for all the reads to complete
+    go func() { 5
+        wg.Wait()
+        close(multiplexedStream)
+    }()
+
+    return multiplexedStream
+}
+```
 
 ### buffered channels
 
