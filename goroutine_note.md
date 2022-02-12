@@ -6,9 +6,9 @@ https://www.oreilly.com/library/view/concurrency-in-go/9781491941294/ch04.html
 
 ##  basic
 
-### preemptable
+### preemption
 
-conditions which must be follow when
+n computing, preemption is the act of temporarily interrupting an executing task, with the intention of resuming it at a later time.
 
 ### instantaneous 
 
@@ -659,3 +659,38 @@ this equation only applies if the system is **stable**
 	- if egress exceeds ingress, you have not utilize your system completely in terms of efficiency).
 
 still don't understand how to use **Little's Law** in practice, you should see the textbook.
+
+### The Context Package
+
+in concurrent program, it is often necessary to preempt (instantaneous) operation because of timeouts, cancellation, or failure of another portion of the system.
+
+we used to use 'done' channel, but it's somewhat limited.
+
+that's where the context package comes in. they can communicate extra info alongside the simple notification to cancel: why the cancellation was occuring, or whether or not our function has a deadline bhyy which it needs to complete.
+
+* **Deadline**: indicate if a goroutine will be canceled after a certain time. this is an absolute time like the machine's clock advances past the given deadline.
+* **Timeout**: relative duration when you want to cancel it. e.g., 10sec timeout means the goroutine cancels after 10sec.
+* **Err**: will return non-nil if the goroutine was canceled. 
+* **Value**: pass information along to child goroutine.
+* **Background**: simply return empty Context.
+* **TODO**: return empty Context. but this is not meant for use in production. use this when you need a placebolder for when you don't knwo which Context to utilize, or if you expect your code to be provided with a Context, but the upstream code hasn't yet furnished one.
+
+
+* **call-graph**: a graph starting from main goroutine to child goroutines.
+
+two primary purpose of the context package:
+
+1. to provide an API for canceling branches of your call-graph.
+2. to provide a data-bag for transporting request-scoped data through your call-graph.
+
+#### cancellation
+
+* a goroutine's parent may want to cancel it.
+* a goroutine may want to cancel its children.
+* any blocking operations within a goroutine need to be preemptable (might be interrupted and resume at the later time) so that it may be canceled.
+
+
+it is important that you do not make the context be one of your member variables. Instead, always pass instances of Context into your functions. this is for the following reasons:
+
+1. any child goroutine does not really know about what kind of cancelation (e.g., Deadline, Timeout, Cancel). => decouple the parent goroutine which does cancelation and the children goroutines which are cancelled.
+2. any child goroutine can also build its own context type (e.g., Deadline, Timeout, Cancel) without affecting the parent goroutine or any other child goroutines.
