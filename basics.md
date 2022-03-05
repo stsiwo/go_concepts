@@ -1024,4 +1024,10 @@ productAPI instead of productApi
 
 - __go test -run TestSuite ./test/functional/users/ -v -count 1 -testify.m TestUserUpdatePutEndpointShouldUpdateDataExceptPasswordSuccessfully__: run a single test case in a test suite.
 
+## NOTE
 
+### close request.Body always
+
+- if you request, don't forget close response.Body. this is because of resource leak, which means that transport may not reuse HTTP/1.x “keep-alive” TCP connections if **the Body is not read to completion** and **closed**.
+
+- keep-alive: https://www.imperva.com/learn/performance/http-keep-alive/
